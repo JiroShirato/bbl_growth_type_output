@@ -1,4 +1,6 @@
 import math
+from collections.abc import Iterable
+
 
 class OnePattern:
 
@@ -42,14 +44,6 @@ class OnePattern:
                 self.values_list.append(i)
                 self.frequency_list.append(1)
 
-    def get_all_lists(self) -> tuple[list[int], list[int]]: 
-        """出現値と頻度のリストを取得
-
-        Returns:
-            tuple[list[int], list[int]]: 出現値と頻度のリストのペア（どちらも、内部リスト）
-        """
-        return self.values_list, self.frequency_list
-
     def get_values_list(self) -> list[int]:
         """出現値のリストを取得
 
@@ -58,14 +52,6 @@ class OnePattern:
         """
         return self.values_list
 
-    def get_frequency_list(self) -> list[int]:
-        """頻度のリストを取得
-
-        Returns:
-            list[int]: 頻度のリスト（内部リスト）
-        """
-        return self.frequency_list
-
     def get_expected_value(self) -> float | None:
         """期待値を取得
 
@@ -73,31 +59,6 @@ class OnePattern:
             float | None: 期待値（存在しないなら None）
         """
         return self.expected_value
-
-    def set_all_lists(self, in_all_vals: tuple[list[int], list[int]]) -> None:
-        """外部入力から、出現値と頻度の全ての値を格納
-
-        Args:
-            in_all_vals (tuple[list[int], list[int]]): 入力された出現値と頻度のリスト
-        """
-        self.values_list = list(in_all_vals[0])
-        self.frequency_list = list(in_all_vals[1])
-
-    def set_values_list(self, in_vals: list[int]) -> None:
-        """出現値のリストを格納
-
-        Args:
-            in_vals (list[int]): 格納する出現値のリスト
-        """
-        self.values_list = list(in_vals)
-
-    def set_frequency_list(self, in_freq: list[int]) -> None:
-        """頻度のリストを格納
-
-        Args:
-            in_freq (list[int]): 格納する頻度のリスト
-        """
-        self.frequency_list = list(in_freq)
 
     def add_ex_point(self, in_val: int) -> None:
         """各出現値に固定値を加算
@@ -136,68 +97,50 @@ class OnePattern:
         Args:
             in_val (int): 除算する値
         """
-        # 切り捨てと切り上げの値を作成
-        floored_values_list: list[int] = [math.floor(a_val / in_val) for a_val in self.values_list]
-        ceiled_values_list: list[int] = [math.ceil(a_val / in_val) for a_val in self.values_list]
-
-        # 切り捨てと切り上げの値を結合
-        concat_values_list: list[int] = floored_values_list + ceiled_values_list
-
-        # 切り捨てと切り上げの頻度を結合
-        concat_freq_list: list[int] = self.frequency_list + self.frequency_list
-
-        # 重複する出現値と頻度をまとめるリスト
-        temp_values_list: list[int] = []
-        temp_freq_list: list[int] = []
-
-        for i in range(0, len(concat_values_list)):
-            # 重複する出現値があるかどうかを確認
-            temp_value = concat_values_list[i]
-            if temp_value in temp_values_list:
-                # 重複する出現値があれば、頻度を加算する
-                temp_point = temp_values_list.index(temp_value)
-                temp_freq_list[temp_point] += concat_freq_list[i]
-            else:
-                # 重複する出現値がなければ、出現値と頻度を追加する
-                temp_values_list.append(temp_value)
-                temp_freq_list.append(concat_freq_list[i])
-
-        # 出現値と頻度のリストを更新
-        self.values_list = temp_values_list
-        self.frequency_list = temp_freq_list
+        pairs = list(zip(self.values_list, self.frequency_list))
+        self._set_merged_values(
+            [(math.floor(v / in_val), f) for v, f in pairs]
+            + [(math.ceil(v / in_val), f) for v, f in pairs]
+        )
 
     def _add_ex_point_from_integer_list(self, add_vals: tuple[int, ...]) -> None:
         """経験値を各出現値に加算
 
         Args:
-            add_vals (tuple[int, ...]): 加算する値のリスト
+            add_vals (tuple[int, ...]): 加算する値の組
         """
-        # 重複する出現値と頻度をまとめるリスト
-        temp_values_list: list[int] = []
-        temp_freq_list: list[int] = []
+        self._set_merged_values(
+            (v + add, f)
+            for add in add_vals
+            for v, f in zip(self.values_list, self.frequency_list)
+        )
 
-        for a_add_val in add_vals:
-            for i in range(0, len(self.values_list)):
-                # 重複する出現値があるかどうかを確認
-                a_added_value = self.values_list[i] + a_add_val
-                if a_added_value in temp_values_list:
-                    # 重複する出現値があれば、頻度を加算する
-                    temp_point = temp_values_list.index(a_added_value)
-                    temp_freq_list[temp_point] += self.frequency_list[i]
-                else:
-                    # 重複する出現値がなければ、出現値と頻度を追加する
-                    temp_values_list.append(a_added_value)
-                    temp_freq_list.append(self.frequency_list[i])
+    def add_equilibrium_ex_point(self) -> None:
+        """平衡鍛錬向けの経験値加算処理
+        """
+        self._set_merged_values(
+            (v + add if v > 0 else v, f)
+            for add in self.equilibrium_add_values_list
+            for v, f in zip(self.values_list, self.frequency_list)
+        )
 
-        # 出現値と頻度のリストを更新
-        self.values_list = temp_values_list
-        self.frequency_list = temp_freq_list
-        
+    def _set_merged_values(self, value_freq_pairs: Iterable[tuple[int, int]]) -> None:
+        """(出現値, 頻度) の組から、同じ出現値の頻度を合計して格納する
+
+        Args:
+            value_freq_pairs (Iterable[tuple[int, int]]): 出現値と頻度の組
+        """
+        merged: dict[int, int] = {}
+        for value, freq in value_freq_pairs:
+            merged[value] = merged.get(value, 0) + freq
+
+        self.values_list = list(merged.keys())
+        self.frequency_list = list(merged.values())
+
     def add_concentrate_ex_point(self) -> None:
         """集中が発生した時の経験値加算処理
         """
         self._add_ex_point_from_integer_list(self.concentrate_add_values_list)
-
 
     def add_proactive_ex_point(self, exec_flag: bool) -> None:
         """積極鍛錬向けの経験値加算処理
@@ -246,35 +189,6 @@ class OnePattern:
         # 出現値のリストを更新
         self.values_list = temp_values_list
 
-    def add_equilibrium_ex_point(self) -> None:
-        """平衡鍛錬向けの経験値加算処理
-        """
-        
-        # 重複する出現値と頻度をまとめるリスト
-        temp_values_list: list[int] = []
-        temp_freq_list: list[int] = []
-
-        for a_add_val in self.equilibrium_add_values_list:
-            for i in range(0, len(self.values_list)):
-                # 重複する出現値があるかどうかを確認
-                a_in_value = self.values_list[i]
-                if a_in_value > 0:
-                    a_added_value = a_in_value + a_add_val 
-                else:
-                    a_added_value = a_in_value
-                if a_added_value in temp_values_list:
-                    # 重複する出現値があれば、頻度を加算する
-                    temp_point = temp_values_list.index(a_added_value)
-                    temp_freq_list[temp_point] += self.frequency_list[i]
-                else:
-                    # 重複する出現値がなければ、出現値と頻度を追加する
-                    temp_values_list.append(a_added_value)
-                    temp_freq_list.append(self.frequency_list[i])
-
-        # 出現値と頻度のリストを更新
-        self.values_list = temp_values_list
-        self.frequency_list = temp_freq_list
-
     def calc_expected_value(self) -> None:
         """期待値を算出
         頻度と出現値のリストから期待値を算出し、expected_valueに格納する。
@@ -289,3 +203,40 @@ class OnePattern:
             self.expected_value = round(const_vals_mul_freq / const_freqs, 2)
         else:
             self.expected_value = None
+
+    def copy(self) -> OnePattern:
+        """出現値・頻度・期待値を複製した、新しいインスタンスを返す
+
+        Returns:
+            OnePattern: 複製したインスタンス（リストは別オブジェクト）
+        """
+        new_pattern = OnePattern()
+        new_pattern.values_list = list(self.values_list)
+        new_pattern.frequency_list = list(self.frequency_list)
+        new_pattern.expected_value = self.expected_value
+        return new_pattern
+
+    @classmethod
+    def from_strings(cls, min_val_str: str, max_val_str: str) -> OnePattern:
+        """パターンの最大値と最小値を入力して、パターンのインスタンスを返す
+        最大値と最小値の値が存在する（文字列が1以上）かを判定する。
+        少なくとも片方が存在しないなら、内部のリストが空のインスタンスを返す。
+        もし、最大値よりも最小値の方が大きいなら、この段階で入れ替える。
+
+        Args:
+            min_val_str (str): 最小値。
+            max_val_str (str): 最大値。
+
+        Returns:
+            OnePattern: パターン処理
+        """
+        # 数値が存在する（文字列の長さが1以上、つまり空文字ではない）ときは数値に変換、そうでないならNone
+        min_val: int | None = int(min_val_str) if len(min_val_str) > 0 else None
+        max_val: int | None = int(max_val_str) if len(max_val_str) > 0 else None
+
+        # 最小値のほうが大きい場合は、最大値と入れ替える（数値の存在も確認したうえで）
+        if (min_val is not None) and (max_val is not None) and (min_val > max_val):
+            min_val, max_val = max_val, min_val
+
+        # インスタンスを作って返す
+        return cls(min_val, max_val)

@@ -2,13 +2,14 @@ import csv
 
 import init_values as iv
 
-def make_attitude_dict() -> dict[str, list[int]]:
-    """属性と表示名の設定を行い、attitude_dictを作成する
+
+def make_attribute_dict() -> dict[str, list[int]]:
+    """属性と表示名の設定を行い、attribute_dictを作成する
 
     Returns:
         dict[str, list[int]]: 属性と表示名の設定を格納した辞書
     """
-    attitude_dict: dict[str, list[int]] = {}
+    attribute_dict: dict[str, list[int]] = {}
 
     for mini_ap in range(len(iv.MINI_AP_ON_OFF_LIST)):
         for yur in range(len(iv.YUR_ON_OFF_LIST)):
@@ -21,7 +22,7 @@ def make_attitude_dict() -> dict[str, list[int]]:
                         concentrate_name_str = iv.CONCENTRATE_ON_OFF_LIST[concentrate]
                         cast_name_str = iv.CAST_ON_OFF_LIST[cast]
 
-                        # 最初にミニAPの名前を設定
+                        # 最初に小APの名前を設定
                         dict_name = mini_ap_name_str
 
                         # 次にYURの名前を設定
@@ -49,26 +50,26 @@ def make_attitude_dict() -> dict[str, list[int]]:
                         dict_name = dict_name + "（" + iv.OUTPUT_TYPE_LIST[output_type] + "）"
 
                         # 属性も設定
-                        attitude_dict[dict_name] = [mini_ap, yur, concentrate, cast, output_type]
+                        attribute_dict[dict_name] = [mini_ap, yur, concentrate, cast, output_type]
 
-    return attitude_dict
+    return attribute_dict
 
-def make_sheet_name_from_attitude_list(attitude_list: list[int]) -> str:
-    """attitude_listからシート名を作成する
+def make_sheet_name_from_attribute_list(attribute_list: list[int]) -> str:
+    """attribute_listからシート名を作成する
 
-    attitude_listの要素は、[小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象]の順で格納されている。
-    attitude_listの要素をもとに、シート名を作成する。
+    attribute_listの要素は、[小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象]の順で格納されている。
+    attribute_listの要素をもとに、シート名を作成する。
     （例：すべて「なし」(0, 0, 0, 0, 0)なら、左から番号をつなぎ合わせて「00000」を返す。）
 
     Args:
-        attitude_list (list[int]): 属性のリスト（小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象）
+        attribute_list (list[int]): 属性のリスト（小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象）
 
     Returns:
         str: 作成されたシート名
     """
     sheet_name_str = ""
-    
-    for i in attitude_list:
+
+    for i in attribute_list:
         sheet_name_str += str(i)
 
     return sheet_name_str
@@ -189,3 +190,13 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
 
     return output_str
 
+def is_train_pattern(pattern_name: str) -> bool:
+    """大練習・小練習のパターンか（自主トレ参加や大練習マイナスは含まない）
+
+    Args:
+        pattern_name (str): 判定するパターンの名前
+
+    Returns:
+        bool: 判定結果
+    """
+    return "_train_ex" in pattern_name

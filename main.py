@@ -12,7 +12,7 @@ import ext_functions as ef
 def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUTPUT_EXCEL_NAME_STR) -> None:
     """各成長期の出現値のパターンをExcelに出力
     Baseball Life(BBL)における成長型に割り当てられる成長期のパターンから
-    各補整が乗った時の出現する経験値を自動で計算するプログラム
+    各補正が乗った時の出現する経験値を自動で計算するプログラム
 
     すべての練習に乗るパターン（例：小AP、筋肉養成ギプス）をシートに分けて
     選手のAPや共通能力、また結婚した嫁の能力で変わる部分は同じシートに別々の列で出力を行う
@@ -30,7 +30,7 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
     """
 
     # シートの出力先の名前をkeyとして設定する属性を格納する辞書（小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象）
-    attitude_dict: dict[str, list[int]] = ef.make_attitude_dict()
+    attribute_dict: dict[str, list[int]] = ef.make_attribute_dict()
 
     # CSVから読み出した成長期のパターン名と小練習、大練習、大練習マイナスの数
     try:
@@ -46,15 +46,15 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
     wb = Workbook()
     wb.remove(wb.active)
 
-    for condition_name, attitude_list in attitude_dict.items():
+    for condition_name, attribute_list in attribute_dict.items():
 
         # 全ての経験値パターン（出現値と頻度）を格納する辞書（引数は成長期,出現パターン）
         all_ex_pattern_dict: dict[str, dict[str, opc.OnePattern]] = {}
 
         # Excelシートの名前
-        excel_sheet_name_str = ef.make_sheet_name_from_attitude_list(attitude_list)
+        excel_sheet_name_str = ef.make_sheet_name_from_attribute_list(attribute_list)
 
-        # シートの本来の名前と出力対象の名前    
+        # シートの本来の名前と出力対象の名前
         real_sheet_name: str = ""
         output_name: str = ""
         real_sheet_name, output_name = ef.separate_output_name_and_type(condition_name)
@@ -77,69 +77,59 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
             excel_rows_val: int = 1
 
             # 小練習の値の取得
-            min_val = a_growth_ex_values_list[1]
-            min_val = int(min_val) if len(min_val) > 0 else None
-            max_val = a_growth_ex_values_list[2]
-            max_val = int(max_val) if len(max_val) > 0 else None
-            all_ex_pattern_dict[growth_name_str]["small_train_ex"] = opc.OnePattern(min_val, max_val)
+            small_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[1], a_growth_ex_values_list[2])
+            all_ex_pattern_dict[growth_name_str]["small_train_ex"] = small_opc
 
             # 自主トレ参加の値の取得(小練習の値を使用、小練習の値がない場合はインスタンスだけ作る)
-            if min_val is None or max_val is None:
+            small_opc_list: list[int] = small_opc.get_values_list()
+            if len(small_opc_list) == 0:
                 all_ex_pattern_dict[growth_name_str]["participate_independent_training_ex"] = opc.OnePattern()
             else:
-                all_ex_pattern_dict[growth_name_str]["participate_independent_training_ex"] = opc.OnePattern(min_val * 3, max_val * 3)
-
+                independent_opc: opc.OnePattern = opc.OnePattern(min(small_opc_list) * 3, max(small_opc_list) * 3)
+                all_ex_pattern_dict[growth_name_str]["participate_independent_training_ex"] = independent_opc
 
             # 大練習の値の取得
-            min_val = a_growth_ex_values_list[3]
-            min_val = int(min_val) if len(min_val) > 0 else None
-            max_val = a_growth_ex_values_list[4]
-            max_val = int(max_val) if len(max_val) > 0 else None
-            all_ex_pattern_dict[growth_name_str]["large_train_ex"] = opc.OnePattern(min_val, max_val)
+            large_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[3], a_growth_ex_values_list[4])
+            all_ex_pattern_dict[growth_name_str]["large_train_ex"] = large_opc
 
             # 大練習のマイナス値の取得
-            min_val = a_growth_ex_values_list[6]
-            min_val = int(min_val) if len(min_val) > 0 else None
-            max_val = a_growth_ex_values_list[5]
-            max_val = int(max_val) if len(max_val) > 0 else None
-            all_ex_pattern_dict[growth_name_str]["large_minus_ex"] = opc.OnePattern(min_val, max_val)
+            minus_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[6], a_growth_ex_values_list[5])
+            all_ex_pattern_dict[growth_name_str]["large_minus_ex"] = minus_opc
 
             # 1. 小APによる経験値追加処理
 
             # 小APありの時
-            if attitude_list[0] == 1:
+            if attribute_list[0] == 1:
                 for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
                     # 大練習と小練習全てに 2 を加算
-                    if "large_train" in one_pattern_name or "small_train" in one_pattern_name:
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].add_ex_point(2)
+                    if ef.is_train_pattern(one_pattern_name):
+                        all_ex_pattern_dict[growth_name_str][one_pattern_name].add_ex_point(iv.MINI_AP_ADD_VALUE)
 
             # 2. APによる経験値倍増処理(倍率設定から、計算)
 
             for ap_name, mul_val in iv.AP_MULTIPLICATION_FACTOR_DICT.items():
                 for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
                     # 大練習と小練習すべてが対象
-                    if "large_train" in one_pattern_name or "small_train" in one_pattern_name:
+                    if ef.is_train_pattern(one_pattern_name):
                         # APの名前の設定
                         add_one_pattern_name = ap_name + "_" + one_pattern_name
                         # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                        add_ex_pattern_dict[add_one_pattern_name] = opc.OnePattern()
-                        add_ex_pattern_dict[add_one_pattern_name].set_all_lists(
-                            all_ex_pattern_dict[growth_name_str][one_pattern_name].get_all_lists())
+                        add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
                         # APに設定された乗算値をかける（端数は切り捨て）
                         add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(mul_val)
 
             for pattern_name, pattern_instance in add_ex_pattern_dict.items():
                 # 新しいパターンを追加
                 all_ex_pattern_dict[growth_name_str][pattern_name] = pattern_instance
-        
+
             # 3. YURによる経験値追加処理
 
             # YURありの時
-            if attitude_list[1] == 1:
+            if attribute_list[1] == 1:
                 for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
                     # 全ての大練習と小練習全てに 4 を加算
-                    if "large_train" in one_pattern_name or "small_train" in one_pattern_name:
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].add_ex_point(4)
+                    if ef.is_train_pattern(one_pattern_name):
+                        all_ex_pattern_dict[growth_name_str][one_pattern_name].add_ex_point(iv.YUR_ADD_VALUE)
 
             # 4.  メンタリスト能力持ちの嫁追加処理
             add_ex_pattern_dict = {}
@@ -155,26 +145,22 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
                     # 上記のパターン以外は対応しない
                     continue
                 # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                add_ex_pattern_dict[add_one_pattern_name] = opc.OnePattern()
-                add_ex_pattern_dict[add_one_pattern_name].set_all_lists(
-                    all_ex_pattern_dict[growth_name_str][one_pattern_name].get_all_lists())
-                # 乗算値2.0をかける
-                add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(2.0)
-                
+                add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
+                # 乗算値 iv.MENTALIST_WIFE_MUL_FACTOR をかける
+                add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(iv.MENTALIST_WIFE_MUL_FACTOR)
             for pattern_name, pattern_instance in add_ex_pattern_dict.items():
                 # 新しいパターンを追加
                 all_ex_pattern_dict[growth_name_str][pattern_name] = pattern_instance
 
-
             # 5.集中、及びイマイチやる気が出ない…による経験値加減処理
-            if attitude_list[2] != 0:
+            if attribute_list[2] != 0:
                 for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
                     # 大練習と小練習すべてが対象
-                    if "large_train" in one_pattern_name or "small_train" in one_pattern_name:
-                        if attitude_list[2] == 1:
+                    if ef.is_train_pattern(one_pattern_name):
+                        if attribute_list[2] == 1:
                             # 集中の時
                             all_ex_pattern_dict[growth_name_str][one_pattern_name].add_concentrate_ex_point()
-                        elif attitude_list[2] == 2:
+                        elif attribute_list[2] == 2:
                             # イマイチの時（2で割る）
                             all_ex_pattern_dict[growth_name_str][one_pattern_name].div_ex_point_with_ceil_and_floor(2)
 
@@ -187,7 +173,7 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
                     large_minus_flag = True
             except ValueError as e:
                 raise ValueError(f"大練習マイナスの値が不正です: {e}、成長期:{growth_name_str}、値の配列:{temp_value_list}") from e
-            
+
             # A. 積極鍛錬
             add_ex_pattern_dict = {}
 
@@ -214,9 +200,7 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
                     continue
 
                 # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                add_ex_pattern_dict[add_one_pattern_name] = opc.OnePattern()
-                add_ex_pattern_dict[add_one_pattern_name].set_all_lists(
-                    all_ex_pattern_dict[growth_name_str][one_pattern_name].get_all_lists())
+                add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
 
                 # 加算ないし減算処理を実施
                 if exec_add_flag:
@@ -229,26 +213,18 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
                 if one_pattern_name == "large_minus_ex":
                     # 大練習マイナスの時（除算処理を実行）
                     add_one_pattern_name = "cautious_" + one_pattern_name
-
                     # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                    add_ex_pattern_dict[add_one_pattern_name] = opc.OnePattern()
-                    add_ex_pattern_dict[add_one_pattern_name].set_all_lists(
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].get_all_lists())
-
+                    add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
                     # 除算処理を実施
                     add_ex_pattern_dict[add_one_pattern_name].div_cautious_ex_point(large_minus_flag)
 
             # C. 精密鍛錬
             for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
                 if "small_train" in one_pattern_name:
-                    # 小鍛錬すべてが対象
+                    # 小練習すべてが対象
                     add_one_pattern_name = "precise_" + one_pattern_name
-
                     # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                    add_ex_pattern_dict[add_one_pattern_name] = opc.OnePattern()
-                    add_ex_pattern_dict[add_one_pattern_name].set_all_lists(
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].get_all_lists())
-
+                    add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
                     # 加算処理を実施
                     add_ex_pattern_dict[add_one_pattern_name].add_precise_ex_point()
 
@@ -268,28 +244,23 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
                     continue
                 else:
                     add_one_pattern_name = "equilibrium_" + one_pattern_name
-
                     # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                    add_ex_pattern_dict[add_one_pattern_name] = opc.OnePattern()
-                    add_ex_pattern_dict[add_one_pattern_name].set_all_lists(
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].get_all_lists())
-
+                    add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
                     # 加算処理を実施
                     add_ex_pattern_dict[add_one_pattern_name].add_equilibrium_ex_point()
-                
             for pattern_name, pattern_instance in add_ex_pattern_dict.items():
                 # 新しく作成した鍛錬系のパターンを追加
                 all_ex_pattern_dict[growth_name_str][pattern_name] = pattern_instance
 
             # 7. 筋肉養成ギプスの適用
-            if attitude_list[3] == 1:
+            if attribute_list[3] == 1:
                 for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                    # 大練習と小練習全てに 1.2 を乗算（端数、切り上げ）
-                    if "large_train" in one_pattern_name or "small_train" in one_pattern_name:
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].mul_ex_point(1.2, False)
+                    # 大練習と小練習全てに iv.CAST_MUL_FACTOR を乗算（端数、切り上げ）
+                    if ef.is_train_pattern(one_pattern_name):
+                        all_ex_pattern_dict[growth_name_str][one_pattern_name].mul_ex_point(iv.CAST_MUL_FACTOR, False)
 
             # 8. 期待値算出
-            if attitude_list[4] == 1:
+            if attribute_list[4] == 1:
                 # 出力対象が期待値の時
                 for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
                     # 全てのパターンで期待値を算出
@@ -302,12 +273,12 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
         for a_pattern_name, pattern_dict in all_ex_pattern_dict.items():
             # エクセルの出力先の開始列
             excel_column_val: int = 1
-            for column_list in iv.OUTPUT_COLUMN_NAME_LIST:
+            for column_name in iv.OUTPUT_COLUMN_NAME_LIST:
                 # パターンのインスタンスを短い名前の変数に置き換え
-                a_pattern_obj = pattern_dict[column_list[0]]
+                a_pattern_obj = pattern_dict[column_name]
                 # 出力対象
                 write_val: str = ""
-                if attitude_list[4] == 1:
+                if attribute_list[4] == 1:
                     # 出力対象が期待値の時
                     write_val = str(a_pattern_obj.get_expected_value())
                 else:
@@ -327,7 +298,7 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
                         elif len(output_list) == 2:
                             write_val = str(max(output_list)) + "," + str(min(output_list))
                         elif len(output_list) == 1:
-                            write_val = str(output_list[0]) 
+                            write_val = str(output_list[0])
                         else:
                             write_val = "None"
 
@@ -356,7 +327,6 @@ if __name__ == "__main__":
         kwargs["input_file"] = args.input
     if args.output is not None:
         kwargs["output_file"] = args.output
-    
     try:
         main(**kwargs)
     except (OSError, ValueError, UnicodeError) as e:
