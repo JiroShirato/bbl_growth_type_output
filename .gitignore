@@ -11,3 +11,6 @@ wheels/
 
 # Output Excel files
 *.xlsx
+
+# Regression test reference output
+!tests/expected_output.xlsx
