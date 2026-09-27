@@ -2,12 +2,397 @@ import argparse
 import sys
 
 from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 import one_pattern_class as opc
 import init_values as iv
 import ext_functions as ef
 
-# 初期値設定
+
+def create_base_patterns(a_growth_ex_values_list: list[str]) -> dict[str, opc.OnePattern]:
+    """CSVの1行から、補正前の基本パターン（小練習、自主トレ参加、大練習、大練習マイナス）を作成
+
+    Args:
+        a_growth_ex_values_list (list[str]): CSVの1行（成長期名と各練習の最小値・最大値）
+
+    Returns:
+        dict[str, opc.OnePattern]: パターン名をkeyとした基本パターンの辞書
+    """
+    patterns_dict: dict[str, opc.OnePattern] = {}
+
+    # 小練習の値の取得
+    small_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[1], a_growth_ex_values_list[2])
+    patterns_dict["small_train_ex"] = small_opc
+
+    # 自主トレ参加の値の取得(小練習の値を使用、小練習の値がない場合はインスタンスだけ作る)
+    small_opc_list: list[int] = small_opc.get_values_list()
+    if len(small_opc_list) == 0:
+        patterns_dict["participate_independent_training_ex"] = opc.OnePattern()
+    else:
+        independent_opc: opc.OnePattern = opc.OnePattern(min(small_opc_list) * 3, max(small_opc_list) * 3)
+        patterns_dict["participate_independent_training_ex"] = independent_opc
+
+    # 大練習の値の取得
+    large_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[3], a_growth_ex_values_list[4])
+    patterns_dict["large_train_ex"] = large_opc
+
+    # 大練習のマイナス値の取得
+    minus_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[6], a_growth_ex_values_list[5])
+    patterns_dict["large_minus_ex"] = minus_opc
+
+    return patterns_dict
+
+
+def add_value_to_train_patterns(patterns_dict: dict[str, opc.OnePattern], add_val: int) -> None:
+    """大練習と小練習すべてのパターンに固定値を加算（小AP、YUR向け）
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+        add_val (int): 加算する値
+    """
+    for one_pattern_name, one_pattern in patterns_dict.items():
+        if ef.is_train_pattern(one_pattern_name):
+            one_pattern.add_ex_point(add_val)
+
+
+def add_ap_patterns(patterns_dict: dict[str, opc.OnePattern]) -> None:
+    """APによる経験値倍増のパターンを追加(倍率設定から、計算)
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+    """
+    # 新たに追加する経験値パターンを格納する辞書
+    add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
+
+    for ap_name, mul_val in iv.AP_MULTIPLICATION_FACTOR_DICT.items():
+        for one_pattern_name, one_pattern in patterns_dict.items():
+            # 大練習と小練習すべてが対象
+            if ef.is_train_pattern(one_pattern_name):
+                # APの名前の設定
+                add_one_pattern_name = ap_name + "_" + one_pattern_name
+                # 新しいパターンを作成し、APに設定された乗算値をかける（端数は切り捨て）
+                add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
+                add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(mul_val)
+
+    patterns_dict.update(add_ex_pattern_dict)
+
+
+def add_mentalist_patterns(patterns_dict: dict[str, opc.OnePattern]) -> None:
+    """メンタリスト能力持ちの嫁のパターンを追加
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+    """
+    # 新たに追加する経験値パターンを格納する辞書
+    add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
+
+    for one_pattern_name, one_pattern in patterns_dict.items():
+        if one_pattern_name == "large_train_ex" or one_pattern_name == "small_train_ex":
+            # 大練習と小練習が対象なら、メンタリストの名前"mental_"を追加
+            add_one_pattern_name = "mental_" + one_pattern_name
+        elif one_pattern_name.startswith("other_ap_"):
+            # 1.5倍APなら、名前をメンタリスト"mental_"に変更
+            add_one_pattern_name = one_pattern_name.replace("other_", "mental_")
+        else:
+            # 上記のパターン以外は対応しない
+            continue
+        # 新しいパターンを作成し、乗算値 iv.MENTALIST_WIFE_MUL_FACTOR をかける
+        add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
+        add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(iv.MENTALIST_WIFE_MUL_FACTOR)
+
+    patterns_dict.update(add_ex_pattern_dict)
+
+
+def apply_concentrate(patterns_dict: dict[str, opc.OnePattern], concentrate_type: int) -> None:
+    """集中、及びイマイチやる気が出ない…による経験値加減処理
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+        concentrate_type (int): 0: なし、1: 集中、2: イマイチ
+    """
+    for one_pattern_name, one_pattern in patterns_dict.items():
+        # 大練習と小練習すべてが対象
+        if ef.is_train_pattern(one_pattern_name):
+            if concentrate_type == 1:
+                # 集中の時
+                one_pattern.add_concentrate_ex_point()
+            elif concentrate_type == 2:
+                # イマイチの時（2で割る）
+                one_pattern.div_ex_point_with_ceil_and_floor(2)
+
+
+def has_large_minus(patterns_dict: dict[str, opc.OnePattern], growth_name_str: str) -> bool:
+    """大練習で経験値が下がるか（積極鍛錬と慎重鍛錬向け）
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+        growth_name_str (str): 成長期名（エラーメッセージ用）
+
+    Returns:
+        bool: 大練習マイナスがあれば True
+
+    Raises:
+        ValueError: 大練習マイナスの値が空の場合
+    """
+    temp_value_list: list[int] = patterns_dict["large_minus_ex"].get_values_list()
+    try:
+        return max(temp_value_list) < 0
+    except ValueError as e:
+        raise ValueError(f"大練習マイナスの値が不正です: {e}、成長期:{growth_name_str}、値の配列:{temp_value_list}") from e
+
+
+def make_proactive_patterns(patterns_dict: dict[str, opc.OnePattern], large_minus_flag: bool) -> dict[str, opc.OnePattern]:
+    """積極鍛錬のパターンを作成
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+        large_minus_flag (bool): 大練習マイナスがあるか
+
+    Returns:
+        dict[str, opc.OnePattern]: 新たに作成したパターンの辞書
+    """
+    add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
+
+    for one_pattern_name, one_pattern in patterns_dict.items():
+
+        # 加算処理フラグ
+        exec_add_flag = True
+
+        if one_pattern_name == "large_train_ex":
+            # 大練習の時
+            add_one_pattern_name = "proactive_" + one_pattern_name
+        elif "_ap_large_" in one_pattern_name and not one_pattern_name.startswith("mental_ap_"):
+            # AP大練習（メンタリスト嫁除く）の時
+            add_one_pattern_name = "proactive_" + one_pattern_name
+        elif one_pattern_name == "small_train_ex":
+            # 小練習の値を用いて、積極新球を作成
+            add_one_pattern_name = "proactive_new_ball_large_train_ex"
+        elif one_pattern_name == "large_minus_ex":
+            # 大練習マイナスの時（減算処理を実行）
+            add_one_pattern_name = "proactive_" + one_pattern_name
+            exec_add_flag = False
+        else:
+            # 上記のパターン以外は対応しない
+            continue
+
+        # 新しいパターンを作成し、加算ないし減算処理を実施
+        add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
+        if exec_add_flag:
+            add_ex_pattern_dict[add_one_pattern_name].add_proactive_ex_point(large_minus_flag)
+        else:
+            add_ex_pattern_dict[add_one_pattern_name].sub_proactive_ex_point(large_minus_flag)
+
+    return add_ex_pattern_dict
+
+
+def make_cautious_patterns(patterns_dict: dict[str, opc.OnePattern], large_minus_flag: bool) -> dict[str, opc.OnePattern]:
+    """慎重鍛錬のパターンを作成（大練習マイナスが対象）
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+        large_minus_flag (bool): 大練習マイナスがあるか
+
+    Returns:
+        dict[str, opc.OnePattern]: 新たに作成したパターンの辞書
+    """
+    add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
+
+    for one_pattern_name, one_pattern in patterns_dict.items():
+        if one_pattern_name == "large_minus_ex":
+            # 新しいパターンを作成し、除算処理を実施
+            add_one_pattern_name = "cautious_" + one_pattern_name
+            add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
+            add_ex_pattern_dict[add_one_pattern_name].div_cautious_ex_point(large_minus_flag)
+
+    return add_ex_pattern_dict
+
+
+def make_precise_patterns(patterns_dict: dict[str, opc.OnePattern]) -> dict[str, opc.OnePattern]:
+    """精密鍛錬のパターンを作成（小練習すべてが対象）
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+
+    Returns:
+        dict[str, opc.OnePattern]: 新たに作成したパターンの辞書
+    """
+    add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
+
+    for one_pattern_name, one_pattern in patterns_dict.items():
+        if "small_train" in one_pattern_name:
+            # 新しいパターンを作成し、加算処理を実施
+            add_one_pattern_name = "precise_" + one_pattern_name
+            add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
+            add_ex_pattern_dict[add_one_pattern_name].add_precise_ex_point()
+
+    return add_ex_pattern_dict
+
+
+def make_equilibrium_patterns(patterns_dict: dict[str, opc.OnePattern]) -> dict[str, opc.OnePattern]:
+    """平衡鍛錬のパターンを作成（大練習マイナスと自主トレ参加以外が対象）
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+
+    Returns:
+        dict[str, opc.OnePattern]: 新たに作成したパターンの辞書
+    """
+    add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
+
+    for one_pattern_name, one_pattern in patterns_dict.items():
+        if one_pattern_name.endswith("large_minus_ex"):
+            # 大練習マイナスは対象外
+            continue
+        elif one_pattern_name == "participate_independent_training_ex":
+            # 合同自主トレ参加も除外
+            continue
+        # 新しいパターンを作成し、加算処理を実施
+        add_one_pattern_name = "equilibrium_" + one_pattern_name
+        add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
+        add_ex_pattern_dict[add_one_pattern_name].add_equilibrium_ex_point()
+
+    return add_ex_pattern_dict
+
+
+def add_training_patterns(patterns_dict: dict[str, opc.OnePattern], growth_name_str: str) -> None:
+    """各鍛錬（積極・慎重・精密・平衡）のパターンを追加
+    各鍛錬は、鍛錬適用前のパターンだけをもとに作成する。
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+        growth_name_str (str): 成長期名（エラーメッセージ用）
+
+    Raises:
+        ValueError: 大練習マイナスの値が空の場合
+    """
+    large_minus_flag: bool = has_large_minus(patterns_dict, growth_name_str)
+
+    # すべての鍛錬のパターンを作成してから、まとめて追加する
+    add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
+    add_ex_pattern_dict.update(make_proactive_patterns(patterns_dict, large_minus_flag))
+    add_ex_pattern_dict.update(make_cautious_patterns(patterns_dict, large_minus_flag))
+    add_ex_pattern_dict.update(make_precise_patterns(patterns_dict))
+    add_ex_pattern_dict.update(make_equilibrium_patterns(patterns_dict))
+
+    patterns_dict.update(add_ex_pattern_dict)
+
+
+def apply_cast(patterns_dict: dict[str, opc.OnePattern]) -> None:
+    """筋肉養成ギプスの適用（大練習と小練習全てに iv.CAST_MUL_FACTOR を乗算、端数は切り上げ）
+
+    Args:
+        patterns_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
+    """
+    for one_pattern_name, one_pattern in patterns_dict.items():
+        if ef.is_train_pattern(one_pattern_name):
+            one_pattern.mul_ex_point(iv.CAST_MUL_FACTOR, False)
+
+
+def calc_growth_patterns(a_growth_ex_values_list: list[str], attribute_list: list[int]) -> dict[str, opc.OnePattern]:
+    """1つの成長期について、シートの条件に応じた全ての経験値パターンを計算
+
+    Args:
+        a_growth_ex_values_list (list[str]): CSVの1行（成長期名と各練習の最小値・最大値）
+        attribute_list (list[int]): シートの条件（小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象）
+
+    Returns:
+        dict[str, opc.OnePattern]: パターン名をkeyとした全てのパターンの辞書
+
+    Raises:
+        ValueError: 数値に変換できない値がある、または大練習マイナスの値が空の場合
+    """
+    mini_ap, yur, concentrate, cast, output_type = attribute_list
+    growth_name_str: str = a_growth_ex_values_list[0]
+
+    patterns_dict: dict[str, opc.OnePattern] = create_base_patterns(a_growth_ex_values_list)
+
+    # 1. 小APによる経験値追加処理
+    if mini_ap == 1:
+        add_value_to_train_patterns(patterns_dict, iv.MINI_AP_ADD_VALUE)
+
+    # 2. APによる経験値倍増処理
+    add_ap_patterns(patterns_dict)
+
+    # 3. YURによる経験値追加処理
+    if yur == 1:
+        add_value_to_train_patterns(patterns_dict, iv.YUR_ADD_VALUE)
+
+    # 4. メンタリスト能力持ちの嫁追加処理
+    add_mentalist_patterns(patterns_dict)
+
+    # 5. 集中、及びイマイチやる気が出ない…による経験値加減処理
+    if concentrate != 0:
+        apply_concentrate(patterns_dict, concentrate)
+
+    # 6. 各鍛錬による補正
+    add_training_patterns(patterns_dict, growth_name_str)
+
+    # 7. 筋肉養成ギプスの適用
+    if cast == 1:
+        apply_cast(patterns_dict)
+
+    # 8. 期待値算出（出力対象が期待値の時）
+    if output_type == 1:
+        for one_pattern in patterns_dict.values():
+            one_pattern.calc_expected_value()
+
+    return patterns_dict
+
+
+def format_values_to_str(values_list: list[int]) -> str:
+    """出現値のリストをセルに出力する文字列に変換
+    3つ以上連続する数がある場合は、その箇所は「～」で括る
+
+    Args:
+        values_list (list[int]): 出現値のリスト
+
+    Returns:
+        str: セルに出力する文字列（空配列なら "None"）
+    """
+    if len(values_list) == 0:
+        # 空配列ならNoneを入れる
+        return "None"
+    if min(values_list) >= 0:
+        # 配列が正の値か0のみなら、ソート処理を行う
+        return ef.sort_and_omit_value_lists_to_str(values_list)
+
+    # 配列に負の数があるなら、直接処理する（大練習マイナスはこの時点で連続しているため）
+    if len(values_list) > 2:
+        return str(max(values_list)) + "～" + str(min(values_list))
+    if len(values_list) == 2:
+        return str(max(values_list)) + "," + str(min(values_list))
+    return str(values_list[0])
+
+
+def write_sheet(ws: Worksheet, all_ex_pattern_dict: dict[str, dict[str, opc.OnePattern]], output_type: int,
+                real_sheet_name: str, output_name: str) -> None:
+    """全ての成長期のパターンをシートに出力
+
+    Args:
+        ws (Worksheet): 出力先のシート
+        all_ex_pattern_dict (dict[str, dict[str, opc.OnePattern]]): 成長期名をkeyとした、各成長期のパターンの辞書
+        output_type (int): 0: 出現値、1: 期待値
+        real_sheet_name (str): シートの本来の名前（乗っている補正）
+        output_name (str): 出力内容の名前
+    """
+    excel_rows_val: int = 1
+
+    for pattern_dict in all_ex_pattern_dict.values():
+        for excel_column_val, column_name in enumerate(iv.OUTPUT_COLUMN_NAME_LIST, start=1):
+            a_pattern_obj = pattern_dict[column_name]
+            if output_type == 1:
+                # 出力対象が期待値の時
+                write_val = str(a_pattern_obj.get_expected_value())
+            else:
+                # 出力対象が出現値の時
+                write_val = format_values_to_str(a_pattern_obj.get_values_list())
+            ws.cell(row=excel_rows_val, column=excel_column_val, value=write_val)
+        excel_rows_val += 1
+
+    # シートの本来の名前（乗っている補正）と、出力内容をそれぞれセルに出力
+    ws.cell(row=excel_rows_val, column=1, value=real_sheet_name)
+    ws.cell(row=excel_rows_val, column=2, value=output_name)
+
 
 def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUTPUT_EXCEL_NAME_STR) -> None:
     """各成長期の出現値のパターンをExcelに出力
@@ -50,272 +435,20 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
 
         # 全ての経験値パターン（出現値と頻度）を格納する辞書（引数は成長期,出現パターン）
         all_ex_pattern_dict: dict[str, dict[str, opc.OnePattern]] = {}
-
-        # Excelシートの名前
-        excel_sheet_name_str = ef.make_sheet_name_from_attribute_list(attribute_list)
+        for a_growth_ex_values_list in all_growth_ex_values_list:
+            growth_name_str = a_growth_ex_values_list[0]
+            all_ex_pattern_dict[growth_name_str] = calc_growth_patterns(a_growth_ex_values_list, attribute_list)
 
         # シートの本来の名前と出力対象の名前
-        real_sheet_name: str = ""
-        output_name: str = ""
         real_sheet_name, output_name = ef.separate_output_name_and_type(condition_name)
 
-        for a_growth_ex_values_list in all_growth_ex_values_list:
-
-            # 成長期パターン
-            growth_name_str = a_growth_ex_values_list[0]
-
-            # 辞書の引数に成長期パターン名を設定
-            all_ex_pattern_dict[growth_name_str] = {}
-
-            # 新たに追加する経験値パターンを格納する辞書
-            add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
-
-            # 大練習のマイナスがあるかどうかを確認するフラグ
-            large_minus_flag: bool = False
-
-            # エクセルの出力先の開始行
-            excel_rows_val: int = 1
-
-            # 小練習の値の取得
-            small_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[1], a_growth_ex_values_list[2])
-            all_ex_pattern_dict[growth_name_str]["small_train_ex"] = small_opc
-
-            # 自主トレ参加の値の取得(小練習の値を使用、小練習の値がない場合はインスタンスだけ作る)
-            small_opc_list: list[int] = small_opc.get_values_list()
-            if len(small_opc_list) == 0:
-                all_ex_pattern_dict[growth_name_str]["participate_independent_training_ex"] = opc.OnePattern()
-            else:
-                independent_opc: opc.OnePattern = opc.OnePattern(min(small_opc_list) * 3, max(small_opc_list) * 3)
-                all_ex_pattern_dict[growth_name_str]["participate_independent_training_ex"] = independent_opc
-
-            # 大練習の値の取得
-            large_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[3], a_growth_ex_values_list[4])
-            all_ex_pattern_dict[growth_name_str]["large_train_ex"] = large_opc
-
-            # 大練習のマイナス値の取得
-            minus_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[6], a_growth_ex_values_list[5])
-            all_ex_pattern_dict[growth_name_str]["large_minus_ex"] = minus_opc
-
-            # 1. 小APによる経験値追加処理
-
-            # 小APありの時
-            if attribute_list[0] == 1:
-                for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                    # 大練習と小練習全てに 2 を加算
-                    if ef.is_train_pattern(one_pattern_name):
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].add_ex_point(iv.MINI_AP_ADD_VALUE)
-
-            # 2. APによる経験値倍増処理(倍率設定から、計算)
-
-            for ap_name, mul_val in iv.AP_MULTIPLICATION_FACTOR_DICT.items():
-                for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                    # 大練習と小練習すべてが対象
-                    if ef.is_train_pattern(one_pattern_name):
-                        # APの名前の設定
-                        add_one_pattern_name = ap_name + "_" + one_pattern_name
-                        # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                        add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
-                        # APに設定された乗算値をかける（端数は切り捨て）
-                        add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(mul_val)
-
-            for pattern_name, pattern_instance in add_ex_pattern_dict.items():
-                # 新しいパターンを追加
-                all_ex_pattern_dict[growth_name_str][pattern_name] = pattern_instance
-
-            # 3. YURによる経験値追加処理
-
-            # YURありの時
-            if attribute_list[1] == 1:
-                for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                    # 全ての大練習と小練習全てに 4 を加算
-                    if ef.is_train_pattern(one_pattern_name):
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].add_ex_point(iv.YUR_ADD_VALUE)
-
-            # 4.  メンタリスト能力持ちの嫁追加処理
-            add_ex_pattern_dict = {}
-
-            for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                if one_pattern_name == "large_train_ex" or one_pattern_name == "small_train_ex":
-                    # 大練習と小練習が対象なら、メンタリストの名前"mental_"を追加
-                    add_one_pattern_name = "mental_" + one_pattern_name
-                elif one_pattern_name.startswith("other_ap_"):
-                    # 1.5倍APなら、名前をメンタリスト"mental_"に変更
-                    add_one_pattern_name = one_pattern_name.replace("other_", "mental_")
-                else:
-                    # 上記のパターン以外は対応しない
-                    continue
-                # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
-                # 乗算値 iv.MENTALIST_WIFE_MUL_FACTOR をかける
-                add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(iv.MENTALIST_WIFE_MUL_FACTOR)
-            for pattern_name, pattern_instance in add_ex_pattern_dict.items():
-                # 新しいパターンを追加
-                all_ex_pattern_dict[growth_name_str][pattern_name] = pattern_instance
-
-            # 5.集中、及びイマイチやる気が出ない…による経験値加減処理
-            if attribute_list[2] != 0:
-                for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                    # 大練習と小練習すべてが対象
-                    if ef.is_train_pattern(one_pattern_name):
-                        if attribute_list[2] == 1:
-                            # 集中の時
-                            all_ex_pattern_dict[growth_name_str][one_pattern_name].add_concentrate_ex_point()
-                        elif attribute_list[2] == 2:
-                            # イマイチの時（2で割る）
-                            all_ex_pattern_dict[growth_name_str][one_pattern_name].div_ex_point_with_ceil_and_floor(2)
-
-            # 6. 各鍛錬による補正の結果
-
-            # 大練習で下がるか(積極鍛錬と慎重鍛錬向け)
-            temp_value_list: list[int] = all_ex_pattern_dict[growth_name_str]["large_minus_ex"].get_values_list()
-            try:
-                if max(temp_value_list) < 0:
-                    large_minus_flag = True
-            except ValueError as e:
-                raise ValueError(f"大練習マイナスの値が不正です: {e}、成長期:{growth_name_str}、値の配列:{temp_value_list}") from e
-
-            # A. 積極鍛錬
-            add_ex_pattern_dict = {}
-
-            for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-
-                # 加算処理フラグ
-                exec_add_flag = True
-
-                if one_pattern_name == "large_train_ex":
-                    # 大練習の時
-                    add_one_pattern_name = "proactive_" + one_pattern_name
-                elif "_ap_large_" in one_pattern_name and not one_pattern_name.startswith("mental_ap_"):
-                    # AP大練習（メンタリスト嫁除く）の時
-                    add_one_pattern_name = "proactive_" + one_pattern_name
-                elif one_pattern_name == "small_train_ex":
-                    # 小練習の値を用いて、積極新球を作成
-                    add_one_pattern_name = "proactive_new_ball_large_train_ex"
-                elif one_pattern_name == "large_minus_ex":
-                    # 大練習マイナスの時（減算処理を実行）
-                    add_one_pattern_name = "proactive_" + one_pattern_name
-                    exec_add_flag = False
-                else:
-                    # 上記のパターン以外は対応しない
-                    continue
-
-                # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
-
-                # 加算ないし減算処理を実施
-                if exec_add_flag:
-                    add_ex_pattern_dict[add_one_pattern_name].add_proactive_ex_point(large_minus_flag)
-                else:
-                    add_ex_pattern_dict[add_one_pattern_name].sub_proactive_ex_point(large_minus_flag)
-
-            # B. 慎重鍛錬
-            for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                if one_pattern_name == "large_minus_ex":
-                    # 大練習マイナスの時（除算処理を実行）
-                    add_one_pattern_name = "cautious_" + one_pattern_name
-                    # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                    add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
-                    # 除算処理を実施
-                    add_ex_pattern_dict[add_one_pattern_name].div_cautious_ex_point(large_minus_flag)
-
-            # C. 精密鍛錬
-            for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                if "small_train" in one_pattern_name:
-                    # 小練習すべてが対象
-                    add_one_pattern_name = "precise_" + one_pattern_name
-                    # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                    add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
-                    # 加算処理を実施
-                    add_ex_pattern_dict[add_one_pattern_name].add_precise_ex_point()
-
-            # D. 平衡鍛錬
-            for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                if one_pattern_name.endswith("large_minus_ex"):
-                    # 大練習マイナスは対象外
-                    continue
-                elif one_pattern_name.startswith("proactive_"):
-                    # 積極鍛錬適用済みのパターンは除外
-                    continue
-                elif one_pattern_name.startswith("cautious_"):
-                    # 慎重鍛錬適用済みのパターンは除外
-                    continue
-                elif one_pattern_name == "participate_independent_training_ex":
-                    # 合同自主トレ参加も除外
-                    continue
-                else:
-                    add_one_pattern_name = "equilibrium_" + one_pattern_name
-                    # 新しいパターンを作成、参照元のパターンの出現値と頻度を受け渡し
-                    add_ex_pattern_dict[add_one_pattern_name] = all_ex_pattern_dict[growth_name_str][one_pattern_name].copy()
-                    # 加算処理を実施
-                    add_ex_pattern_dict[add_one_pattern_name].add_equilibrium_ex_point()
-            for pattern_name, pattern_instance in add_ex_pattern_dict.items():
-                # 新しく作成した鍛錬系のパターンを追加
-                all_ex_pattern_dict[growth_name_str][pattern_name] = pattern_instance
-
-            # 7. 筋肉養成ギプスの適用
-            if attribute_list[3] == 1:
-                for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                    # 大練習と小練習全てに iv.CAST_MUL_FACTOR を乗算（端数、切り上げ）
-                    if ef.is_train_pattern(one_pattern_name):
-                        all_ex_pattern_dict[growth_name_str][one_pattern_name].mul_ex_point(iv.CAST_MUL_FACTOR, False)
-
-            # 8. 期待値算出
-            if attribute_list[4] == 1:
-                # 出力対象が期待値の時
-                for one_pattern_name in all_ex_pattern_dict[growth_name_str]:
-                    # 全てのパターンで期待値を算出
-                    all_ex_pattern_dict[growth_name_str][one_pattern_name].calc_expected_value()
-
         # Excelへの出力
-        wb.create_sheet(excel_sheet_name_str)
-        ws = wb[excel_sheet_name_str]
-
-        for a_pattern_name, pattern_dict in all_ex_pattern_dict.items():
-            # エクセルの出力先の開始列
-            excel_column_val: int = 1
-            for column_name in iv.OUTPUT_COLUMN_NAME_LIST:
-                # パターンのインスタンスを短い名前の変数に置き換え
-                a_pattern_obj = pattern_dict[column_name]
-                # 出力対象
-                write_val: str = ""
-                if attribute_list[4] == 1:
-                    # 出力対象が期待値の時
-                    write_val = str(a_pattern_obj.get_expected_value())
-                else:
-                    # 出力対象が出現値の時は、ソートした後に文字列化
-                    # 3つ以上連続する数がある場合は、その箇所は「～」で括る
-                    output_list = a_pattern_obj.get_values_list()
-                    if len(output_list) == 0:
-                        # 空配列ならNoneを入れる
-                        write_val = "None"
-                    elif min(output_list) >= 0:
-                        # 配列が正の値か0のみなら、ソート処理を行う
-                        write_val = ef.sort_and_omit_value_lists_to_str(a_pattern_obj.get_values_list())
-                    else:
-                        # 配列が負の数のみなら、直接処理する（大練習マイナスはこの時点で連続しているため）
-                        if len(output_list) > 2:
-                            write_val = str(max(output_list)) + "～" + str(min(output_list))
-                        elif len(output_list) == 2:
-                            write_val = str(max(output_list)) + "," + str(min(output_list))
-                        elif len(output_list) == 1:
-                            write_val = str(output_list[0])
-                        else:
-                            write_val = "None"
-
-                # エクセルのセルに出力
-                ws.cell(row=excel_rows_val, column=excel_column_val, value=write_val)
-                # 列を更新
-                excel_column_val += 1
-            # 行を更新
-            excel_rows_val += 1
-
-        # シートの本来の名前（乗っている補正）と、出力内容をそれぞれセルに出力
-        ws.cell(row=excel_rows_val, column=1, value=real_sheet_name)
-        ws.cell(row=excel_rows_val, column=2, value=output_name)
-
+        ws = wb.create_sheet(ef.make_sheet_name_from_attribute_list(attribute_list))
+        write_sheet(ws, all_ex_pattern_dict, attribute_list[4], real_sheet_name, output_name)
 
     wb.save(output_file)
     print(output_file + " を保存しました")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="main関数を実行します")
