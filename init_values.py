@@ -4,6 +4,9 @@ INPUT_CSV_FILE_NAME_STR = "import.csv"
 # 出力するExcelのファイル名（コマンドで指定しない場合）
 OUTPUT_EXCEL_NAME_STR = "output.xlsx"
 
+# 入力CSVの1行あたりの必要な列数
+REQUIRED_COLUMN_COUNT = 7
+
 # 小APの有無
 MINI_AP_ON_OFF_LIST = ["なし", "小AP"]
 

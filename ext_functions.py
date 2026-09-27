@@ -98,11 +98,19 @@ def read_csv_file(file_path: str) -> list[list[str]]:
 
     Returns:
         list[list[str]]: CSVファイルの内容を格納したリスト
+
+    Raises:
+        ValueError: 列数が足りない行がある場合
     """
     data_list: list[list[str]] = []
     with open(file_path, mode='r', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
+            if len(row) < iv.REQUIRED_COLUMN_COUNT:
+                raise ValueError(
+                    f"{reader.line_num}行目の列数が不足しています"
+                    f"（必要: {iv.REQUIRED_COLUMN_COUNT}列、実際: {len(row)}列）: {row}"
+                )
             data_list.append(row)
     return data_list
 

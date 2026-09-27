@@ -24,7 +24,8 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
     Raises:
         OSError: 入力ファイルの読み込み、またはExcelの保存に失敗した場合。
         ValueError: 入力CSVが空、数値に変換できない値がある、
-            または大練習マイナスの範囲が不正な場合。
+            または大練習マイナスの範囲が不正な場合、
+            あるいは入力したCSVファイルの列数が足りない場合。
         UnicodeDecodeError: 入力CSVをUTF-8として読み込めない場合。
     """
 
@@ -45,7 +46,7 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
     wb = Workbook()
     wb.remove(wb.active)
 
-    for pattern_name, attitude_list in attitude_dict.items():
+    for condition_name, attitude_list in attitude_dict.items():
 
         # 全ての経験値パターン（出現値と頻度）を格納する辞書（引数は成長期,出現パターン）
         all_ex_pattern_dict: dict[str, dict[str, opc.OnePattern]] = {}
@@ -56,7 +57,7 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
         # シートの本来の名前と出力対象の名前    
         real_sheet_name: str = ""
         output_name: str = ""
-        real_sheet_name, output_name = ef.separate_output_name_and_type(pattern_name)
+        real_sheet_name, output_name = ef.separate_output_name_and_type(condition_name)
 
         for a_growth_ex_values_list in all_growth_ex_values_list:
 
@@ -185,9 +186,7 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
                 if max(temp_value_list) < 0:
                     large_minus_flag = True
             except ValueError as e:
-                print("成長期:" + growth_name_str)
-                print("値の配列:" + str(temp_value_list))
-                raise ValueError(f"大練習マイナスの値が不正です: {e}")
+                raise ValueError(f"大練習マイナスの値が不正です: {e}、成長期:{growth_name_str}、値の配列:{temp_value_list}") from e
             
             # A. 積極鍛錬
             add_ex_pattern_dict = {}

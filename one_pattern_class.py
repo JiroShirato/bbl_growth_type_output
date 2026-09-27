@@ -12,16 +12,16 @@ class OnePattern:
     expected_value: float | None
 
     # 集中発生時の加算値
-    concentrate_add_values_list: list[int] = [3, 4, 5]
+    concentrate_add_values_list: tuple[int, ...] = (3, 4, 5)
 
     # 積極鍛錬の加算値
-    proactive_add_values_list: list[int] = [2, 3, 4]
+    proactive_add_values_list: tuple[int, ...] = (2, 3, 4)
 
     # 積極鍛錬の減少値
-    proactive_sub_values_list: list[int] = [-1, -2]
+    proactive_sub_values_list: tuple[int, ...] = (-1, -2)
 
     # 平衡鍛錬の加算値
-    equilibrium_add_values_list: list[int] = [1, 2, 3]
+    equilibrium_add_values_list: tuple[int, ...] = (1, 2, 3)
 
     def __init__(self, min_val: int | None = None, max_val: int | None = None) -> None:
         """コンストラクタ
@@ -111,13 +111,24 @@ class OnePattern:
         """各出現値に固定値を乗算
 
         Args:
-            in_val (float): 乗算する値
+            in_val (float): 乗算する値、小数点一桁以内の値を入力すること
             floor_flag (bool, optional): 結果を切り捨てるかどうかのフラグ（falseなら切り上げる）。 入力がない時は True
+
+        Raises:
+            ValueError: 倍率が有限でない、または小数点以下1桁を超える場合。
         """
+        if not math.isfinite(in_val):
+            raise ValueError(f"倍率は有限の数値で指定してください: {in_val}")
+
+        factor: int = round(in_val * 10)
+
+        if in_val != factor / 10:
+            raise ValueError(f"倍率は小数点以下1桁までで指定してください: {in_val}")
+
         if floor_flag:
-            self.values_list = [math.floor(a_val * in_val) for a_val in self.values_list]
+            self.values_list = [a_val * factor // 10 for a_val in self.values_list]
         else:
-            self.values_list = [math.ceil(a_val * in_val) for a_val in self.values_list]
+            self.values_list = [-(-a_val * factor // 10) for a_val in self.values_list]
 
     def div_ex_point_with_ceil_and_floor(self, in_val: int) -> None:
         """各出現値に固定値を除算（切り捨てと切り上げが半々の確率で出現）
@@ -155,11 +166,11 @@ class OnePattern:
         self.values_list = temp_values_list
         self.frequency_list = temp_freq_list
 
-    def _add_ex_point_from_integer_list(self, add_vals: list[int]) -> None:
+    def _add_ex_point_from_integer_list(self, add_vals: tuple[int, ...]) -> None:
         """経験値を各出現値に加算
 
         Args:
-            add_vals (list[int]): 加算する値のリスト
+            add_vals (tuple[int, ...]): 加算する値のリスト
         """
         # 重複する出現値と頻度をまとめるリスト
         temp_values_list: list[int] = []

@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Output Excel files
+*.xlsx
