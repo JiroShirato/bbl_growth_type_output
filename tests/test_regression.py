@@ -30,7 +30,8 @@ def read_sheet_values(worksheet) -> list[list]:
     Returns:
         list[list]: 各行のセルの値のリスト
     """
-    rows: list[list] = [list(row) for row in worksheet.iter_rows(values_only=True)]
+    rows: list[list] = [list(row)
+                        for row in worksheet.iter_rows(values_only=True)]
 
     # 各行の末尾の空セルを除く
     for row in rows:
@@ -50,7 +51,8 @@ class TestRegression(unittest.TestCase):
     def test_output_matches_expected(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "output.xlsx"
-            main.main(input_file=str(INPUT_CSV_PATH), output_file=str(output_path))
+            main.main(input_file=str(INPUT_CSV_PATH),
+                      output_file=str(output_path))
 
             expected_wb = load_workbook(EXPECTED_EXCEL_PATH, read_only=True)
             actual_wb = load_workbook(output_path, read_only=True)
@@ -61,7 +63,8 @@ class TestRegression(unittest.TestCase):
                 # 各シートの全セル（値のある行数・列数の違いも差分として検出する）
                 for sheet_name in expected_wb.sheetnames:
                     with self.subTest(sheet=sheet_name):
-                        expected_rows = read_sheet_values(expected_wb[sheet_name])
+                        expected_rows = read_sheet_values(
+                            expected_wb[sheet_name])
                         actual_rows = read_sheet_values(actual_wb[sheet_name])
                         self.assertEqual(expected_rows, actual_rows)
             finally:

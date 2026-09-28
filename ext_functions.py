@@ -47,12 +47,15 @@ def make_attribute_dict() -> dict[str, list[int]]:
                                 dict_name = cast_name_str
 
                         # 最後に出力内容を名前に追加
-                        dict_name = dict_name + "（" + iv.OUTPUT_TYPE_LIST[output_type] + "）"
+                        dict_name = dict_name + "（" + \
+                            iv.OUTPUT_TYPE_LIST[output_type] + "）"
 
                         # 属性も設定
-                        attribute_dict[dict_name] = [mini_ap, yur, concentrate, cast, output_type]
+                        attribute_dict[dict_name] = [
+                            mini_ap, yur, concentrate, cast, output_type]
 
     return attribute_dict
+
 
 def make_sheet_name_from_attribute_list(attribute_list: list[int]) -> str:
     """attribute_listからシート名を作成する
@@ -74,6 +77,7 @@ def make_sheet_name_from_attribute_list(attribute_list: list[int]) -> str:
 
     return sheet_name_str
 
+
 def separate_output_name_and_type(input_str: str) -> tuple[str, str]:
     """出力対象の名前と出力対象の種類を分離する
 
@@ -90,6 +94,7 @@ def separate_output_name_and_type(input_str: str) -> tuple[str, str]:
         output_type: str = input_str[name_start_index + 1:name_end_index]
         return output_name, output_type
     return input_str, ""  # "（" または "）" が見つからない場合は、元の文字列を返す
+
 
 def read_csv_file(file_path: str) -> list[list[str]]:
     """CSVファイルを読み込み、内容をリストとして返す
@@ -114,6 +119,7 @@ def read_csv_file(file_path: str) -> list[list[str]]:
                 )
             data_list.append(row)
     return data_list
+
 
 def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
     """入力したリストをソートしたうえで、3つ連続する箇所があれば「～」で省略した上で文字列で出力
@@ -158,11 +164,13 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
                 # 隣同士が連続していない
                 if sequence_flag and min_point + 2 < max_point:
                     # 左の確認ポイントとの差が2つ以上で連続していたのなら、省略文字「～」で括る
-                    output_str = output_str + "～" + str(sorted_list[max_point-1])
+                    output_str = output_str + "～" + \
+                        str(sorted_list[max_point-1])
                 else:
                     # それ以外は,で対応する
                     if not output_str.endswith(str(sorted_list[max_point-1])):
-                        output_str = output_str + "," + str(sorted_list[max_point-1])
+                        output_str = output_str + "," + \
+                            str(sorted_list[max_point-1])
                 # 右の確認ポイントの数値を出力文字列に入れる
                 if (max_point + 1) < sorted_list_length:
                     output_str = output_str + "," + str(sorted_list[max_point])
@@ -189,6 +197,7 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
         output_str = output_str + "," + str(sorted_list[1])
 
     return output_str
+
 
 def is_train_pattern(pattern_name: str) -> bool:
     """大練習・小練習のパターンか（自主トレ参加や大練習マイナスは含まない）

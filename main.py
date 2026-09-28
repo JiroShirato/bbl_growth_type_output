@@ -21,7 +21,8 @@ def create_base_patterns(a_growth_ex_values_list: list[str]) -> dict[str, opc.On
     patterns_dict: dict[str, opc.OnePattern] = {}
 
     # 小練習の値の取得
-    small_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[1], a_growth_ex_values_list[2])
+    small_opc: opc.OnePattern = opc.OnePattern.from_strings(
+        a_growth_ex_values_list[1], a_growth_ex_values_list[2])
     patterns_dict["small_train_ex"] = small_opc
 
     # 自主トレ参加の値の取得(小練習の値を使用、小練習の値がない場合はインスタンスだけ作る)
@@ -29,15 +30,18 @@ def create_base_patterns(a_growth_ex_values_list: list[str]) -> dict[str, opc.On
     if len(small_opc_list) == 0:
         patterns_dict["participate_independent_training_ex"] = opc.OnePattern()
     else:
-        independent_opc: opc.OnePattern = opc.OnePattern(min(small_opc_list) * 3, max(small_opc_list) * 3)
+        independent_opc: opc.OnePattern = opc.OnePattern(
+            min(small_opc_list) * 3, max(small_opc_list) * 3)
         patterns_dict["participate_independent_training_ex"] = independent_opc
 
     # 大練習の値の取得
-    large_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[3], a_growth_ex_values_list[4])
+    large_opc: opc.OnePattern = opc.OnePattern.from_strings(
+        a_growth_ex_values_list[3], a_growth_ex_values_list[4])
     patterns_dict["large_train_ex"] = large_opc
 
     # 大練習のマイナス値の取得
-    minus_opc: opc.OnePattern = opc.OnePattern.from_strings(a_growth_ex_values_list[6], a_growth_ex_values_list[5])
+    minus_opc: opc.OnePattern = opc.OnePattern.from_strings(
+        a_growth_ex_values_list[6], a_growth_ex_values_list[5])
     patterns_dict["large_minus_ex"] = minus_opc
 
     return patterns_dict
@@ -92,13 +96,15 @@ def add_mentalist_patterns(patterns_dict: dict[str, opc.OnePattern]) -> None:
             add_one_pattern_name = "mental_" + one_pattern_name
         elif one_pattern_name.startswith("other_ap_"):
             # 1.5倍APなら、名前をメンタリスト"mental_"に変更
-            add_one_pattern_name = one_pattern_name.replace("other_", "mental_")
+            add_one_pattern_name = one_pattern_name.replace(
+                "other_", "mental_")
         else:
             # 上記のパターン以外は対応しない
             continue
         # 新しいパターンを作成し、乗算値 iv.MENTALIST_WIFE_MUL_FACTOR をかける
         add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
-        add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(iv.MENTALIST_WIFE_MUL_FACTOR)
+        add_ex_pattern_dict[add_one_pattern_name].mul_ex_point(
+            iv.MENTALIST_WIFE_MUL_FACTOR)
 
     patterns_dict.update(add_ex_pattern_dict)
 
@@ -134,11 +140,13 @@ def has_large_minus(patterns_dict: dict[str, opc.OnePattern], growth_name_str: s
     Raises:
         ValueError: 大練習マイナスの値が空の場合
     """
-    temp_value_list: list[int] = patterns_dict["large_minus_ex"].get_values_list()
+    temp_value_list: list[int] = patterns_dict["large_minus_ex"].get_values_list(
+    )
     try:
         return max(temp_value_list) < 0
     except ValueError as e:
-        raise ValueError(f"大練習マイナスの値が不正です: {e}、成長期:{growth_name_str}、値の配列:{temp_value_list}") from e
+        raise ValueError(
+            f"大練習マイナスの値が不正です: {e}、成長期:{growth_name_str}、値の配列:{temp_value_list}") from e
 
 
 def make_proactive_patterns(patterns_dict: dict[str, opc.OnePattern], large_minus_flag: bool) -> dict[str, opc.OnePattern]:
@@ -178,9 +186,11 @@ def make_proactive_patterns(patterns_dict: dict[str, opc.OnePattern], large_minu
         # 新しいパターンを作成し、加算ないし減算処理を実施
         add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
         if exec_add_flag:
-            add_ex_pattern_dict[add_one_pattern_name].add_proactive_ex_point(large_minus_flag)
+            add_ex_pattern_dict[add_one_pattern_name].add_proactive_ex_point(
+                large_minus_flag)
         else:
-            add_ex_pattern_dict[add_one_pattern_name].sub_proactive_ex_point(large_minus_flag)
+            add_ex_pattern_dict[add_one_pattern_name].sub_proactive_ex_point(
+                large_minus_flag)
 
     return add_ex_pattern_dict
 
@@ -202,7 +212,8 @@ def make_cautious_patterns(patterns_dict: dict[str, opc.OnePattern], large_minus
             # 新しいパターンを作成し、除算処理を実施
             add_one_pattern_name = "cautious_" + one_pattern_name
             add_ex_pattern_dict[add_one_pattern_name] = one_pattern.copy()
-            add_ex_pattern_dict[add_one_pattern_name].div_cautious_ex_point(large_minus_flag)
+            add_ex_pattern_dict[add_one_pattern_name].div_cautious_ex_point(
+                large_minus_flag)
 
     return add_ex_pattern_dict
 
@@ -269,8 +280,10 @@ def add_training_patterns(patterns_dict: dict[str, opc.OnePattern], growth_name_
 
     # すべての鍛錬のパターンを作成してから、まとめて追加する
     add_ex_pattern_dict: dict[str, opc.OnePattern] = {}
-    add_ex_pattern_dict.update(make_proactive_patterns(patterns_dict, large_minus_flag))
-    add_ex_pattern_dict.update(make_cautious_patterns(patterns_dict, large_minus_flag))
+    add_ex_pattern_dict.update(
+        make_proactive_patterns(patterns_dict, large_minus_flag))
+    add_ex_pattern_dict.update(
+        make_cautious_patterns(patterns_dict, large_minus_flag))
     add_ex_pattern_dict.update(make_precise_patterns(patterns_dict))
     add_ex_pattern_dict.update(make_equilibrium_patterns(patterns_dict))
 
@@ -304,7 +317,8 @@ def calc_growth_patterns(a_growth_ex_values_list: list[str], attribute_list: lis
     mini_ap, yur, concentrate, cast, output_type = attribute_list
     growth_name_str: str = a_growth_ex_values_list[0]
 
-    patterns_dict: dict[str, opc.OnePattern] = create_base_patterns(a_growth_ex_values_list)
+    patterns_dict: dict[str, opc.OnePattern] = create_base_patterns(
+        a_growth_ex_values_list)
 
     # 1. 小APによる経験値追加処理
     if mini_ap == 1:
@@ -385,7 +399,8 @@ def write_sheet(ws: Worksheet, all_ex_pattern_dict: dict[str, dict[str, opc.OneP
                 write_val = str(a_pattern_obj.get_expected_value())
             else:
                 # 出力対象が出現値の時
-                write_val = format_values_to_str(a_pattern_obj.get_values_list())
+                write_val = format_values_to_str(
+                    a_pattern_obj.get_values_list())
             ws.cell(row=excel_rows_val, column=excel_column_val, value=write_val)
         excel_rows_val += 1
 
@@ -437,14 +452,18 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
         all_ex_pattern_dict: dict[str, dict[str, opc.OnePattern]] = {}
         for a_growth_ex_values_list in all_growth_ex_values_list:
             growth_name_str = a_growth_ex_values_list[0]
-            all_ex_pattern_dict[growth_name_str] = calc_growth_patterns(a_growth_ex_values_list, attribute_list)
+            all_ex_pattern_dict[growth_name_str] = calc_growth_patterns(
+                a_growth_ex_values_list, attribute_list)
 
         # シートの本来の名前と出力対象の名前
-        real_sheet_name, output_name = ef.separate_output_name_and_type(condition_name)
+        real_sheet_name, output_name = ef.separate_output_name_and_type(
+            condition_name)
 
         # Excelへの出力
-        ws = wb.create_sheet(ef.make_sheet_name_from_attribute_list(attribute_list))
-        write_sheet(ws, all_ex_pattern_dict, attribute_list[4], real_sheet_name, output_name)
+        ws = wb.create_sheet(
+            ef.make_sheet_name_from_attribute_list(attribute_list))
+        write_sheet(ws, all_ex_pattern_dict,
+                    attribute_list[4], real_sheet_name, output_name)
 
     wb.save(output_file)
     print(output_file + " を保存しました")

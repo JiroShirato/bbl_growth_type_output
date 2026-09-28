@@ -81,15 +81,18 @@ class OnePattern:
         if not math.isfinite(in_val):
             raise ValueError(f"倍率は有限の数値で指定してください: {in_val}")
 
+        # 諸数点一桁の乗算の係数を10倍して四捨五入
         factor: int = round(in_val * 10)
 
         if in_val != factor / 10:
             raise ValueError(f"倍率は小数点以下1桁までで指定してください: {in_val}")
 
         if floor_flag:
-            self.values_list = [a_val * factor // 10 for a_val in self.values_list]
+            self.values_list = [a_val * factor //
+                                10 for a_val in self.values_list]
         else:
-            self.values_list = [-(-a_val * factor // 10) for a_val in self.values_list]
+            self.values_list = [-(-a_val * factor // 10)
+                                for a_val in self.values_list]
 
     def div_ex_point_with_ceil_and_floor(self, in_val: int) -> None:
         """各出現値に固定値を除算（切り捨てと切り上げが半々の確率で出現）
@@ -149,7 +152,8 @@ class OnePattern:
             exec_flag (bool): 実行条件に該当するかのフラグ
         """
         if exec_flag:
-            self._add_ex_point_from_integer_list(self.proactive_add_values_list)
+            self._add_ex_point_from_integer_list(
+                self.proactive_add_values_list)
 
     def sub_proactive_ex_point(self, exec_flag: bool) -> None:
         """積極鍛錬向けの経験値減少処理
@@ -158,7 +162,8 @@ class OnePattern:
             exec_flag (bool): 実行条件に該当するかのフラグ
         """
         if exec_flag:
-            self._add_ex_point_from_integer_list(self.proactive_sub_values_list)
+            self._add_ex_point_from_integer_list(
+                self.proactive_sub_values_list)
 
     def div_cautious_ex_point(self, exec_flag: bool) -> None:
         """慎重鍛錬向けの経験値除算処理
@@ -231,8 +236,10 @@ class OnePattern:
             OnePattern: パターン処理
         """
         # 数値が存在する（文字列の長さが1以上、つまり空文字ではない）ときは数値に変換、そうでないならNone
-        min_val: int | None = int(min_val_str) if len(min_val_str) > 0 else None
-        max_val: int | None = int(max_val_str) if len(max_val_str) > 0 else None
+        min_val: int | None = int(min_val_str) if len(
+            min_val_str) > 0 else None
+        max_val: int | None = int(max_val_str) if len(
+            max_val_str) > 0 else None
 
         # 最小値のほうが大きい場合は、最大値と入れ替える（数値の存在も確認したうえで）
         if (min_val is not None) and (max_val is not None) and (min_val > max_val):
