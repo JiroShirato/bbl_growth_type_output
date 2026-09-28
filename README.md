@@ -213,6 +213,10 @@ pycodestyleは `pyproject.toml` の設定を読まないため、行の上限と
 
 依存パッケージを追加する場合は、例えば `uv add openpyxl` を実行します。開発用のツールは `uv add --dev autopep8` のように `--dev` を付けて追加します。設定内のパターン識別子や条件の並び順は計算処理でも使用しているため、変更時は参照側との整合性も確認してください。
 
+## 参考URL
+
+- [BBL成長型メモ(全条件網羅版)](https://docs.google.com/spreadsheets/d/1KCz-KLeHL3BVnvRpVJjM_SSM43ixvubc5Sr2PBFrrwY/edit?gid=157841273#gid=157841273)
+-
 ## ライセンス
 
 [MIT License](./LICENSE) で公開しています。
