@@ -216,7 +216,7 @@ pycodestyleは `pyproject.toml` の設定を読まないため、行の上限と
 ## 参考URL
 
 - [BBL成長型メモ(全条件網羅版)](https://docs.google.com/spreadsheets/d/1KCz-KLeHL3BVnvRpVJjM_SSM43ixvubc5Sr2PBFrrwY/edit?gid=157841273#gid=157841273)
--
+
 ## ライセンス
 
 [MIT License](./LICENSE) で公開しています。
