@@ -52,9 +52,8 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
 
         # 経験値パターン毎に各条件下の経験値のパターンを計算
         for a_growth_ex_values_list in all_growth_ex_values_list:
-            growth_name_str: str = a_growth_ex_values_list[0]
-            all_ex_pattern_dict[growth_name_str] =\
-                sub.calc_growth_patterns(a_growth_ex_values_list, attribute_list)
+            growth_name: str = a_growth_ex_values_list[0]
+            all_ex_pattern_dict[growth_name] = sub.calc_growth_patterns(a_growth_ex_values_list, attribute_list)
 
         # シートの本来の名前と出力対象の名前
         real_sheet_name, output_name = ef.separate_output_name_and_type(condition_name)

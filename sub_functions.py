@@ -19,7 +19,7 @@ def calc_growth_patterns(in_gro_ex_list: list[str], in_att_list: list[int]) -> d
         ValueError: 数値に変換できない値がある、または大練習マイナスの値が空の場合
     """
     mini_ap, yur, concentrate, cast, output_type = in_att_list
-    growth_name_str: str = in_gro_ex_list[0]
+    growth_name: str = in_gro_ex_list[0]
 
     patterns_dict: dict[str, opc.OnePattern] = create_base_patterns(in_gro_ex_list)
 
@@ -42,7 +42,7 @@ def calc_growth_patterns(in_gro_ex_list: list[str], in_att_list: list[int]) -> d
         apply_concentrate(patterns_dict, concentrate)
 
     # 6. 各鍛錬による補正
-    add_training_patterns(patterns_dict, growth_name_str)
+    add_training_patterns(patterns_dict, growth_name)
 
     # 7. 筋肉養成ギプスの適用
     if cast == 1:
@@ -170,12 +170,12 @@ def apply_concentrate(in_ptn_dict: dict[str, opc.OnePattern], in_conc_type: int)
                 one_pattern.div_ex_point_with_ceil_and_floor(2)
 
 
-def has_large_minus(in_ptn_dict: dict[str, opc.OnePattern], in_gro_name_str: str) -> bool:
+def has_large_minus(in_ptn_dict: dict[str, opc.OnePattern], in_gro_name: str) -> bool:
     """大練習で経験値が下がるか（積極鍛錬と慎重鍛錬向け）
 
     Args:
         in_ptn_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
-        in_gro_name_str (str): 成長期名（エラーメッセージ用）
+        in_gro_name (str): 成長期名（エラーメッセージ用）
 
     Returns:
         bool: 大練習マイナスがあれば True
@@ -189,7 +189,7 @@ def has_large_minus(in_ptn_dict: dict[str, opc.OnePattern], in_gro_name_str: str
         return max(temp_value_list) < 0
     except ValueError as e:
         raise ValueError(
-            f"大練習マイナスの値が不正です: {e}、成長期:{in_gro_name_str}、値の配列:{temp_value_list}") from e
+            f"大練習マイナスの値が不正です: {e}、成長期:{in_gro_name}、値の配列:{temp_value_list}") from e
 
 
 def make_proactive_patterns(in_ptn_dict: dict[str, opc.OnePattern], is_large_minus: bool) -> dict[str, opc.OnePattern]:
@@ -304,19 +304,19 @@ def make_equilibrium_patterns(in_ptn_dict: dict[str, opc.OnePattern]) -> dict[st
     return add_ex_pattern_dict
 
 
-def add_training_patterns(in_ptn_dict: dict[str, opc.OnePattern], in_gro_name_str: str) -> None:
+def add_training_patterns(in_ptn_dict: dict[str, opc.OnePattern], in_gro_name: str) -> None:
     """各鍛錬（積極・慎重・精密・平衡）のパターンを追加
     各鍛錬は、鍛錬適用前のパターンだけをもとに作成する。
 
     Args:
         in_ptn_dict (dict[str, opc.OnePattern]): 1つの成長期のパターンの辞書
-        in_gro_name_str (str): 成長期名（エラーメッセージ用）
+        in_gro_name (str): 成長期名（エラーメッセージ用）
 
     Raises:
         ValueError: 大練習マイナスの値が空の場合
     """
     # 大練習マイナスが発生するかのフラグ
-    is_large_minus: bool = has_large_minus(in_ptn_dict, in_gro_name_str)
+    is_large_minus: bool = has_large_minus(in_ptn_dict, in_gro_name)
 
     # すべての鍛錬のパターンを作成してから、まとめて追加する
     add_ex_pattern_dict: dict[str, opc.OnePattern] = {}

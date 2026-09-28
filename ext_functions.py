@@ -9,6 +9,7 @@ def make_attribute_dict() -> dict[str, list[int]]:
     Returns:
         dict[str, list[int]]: 属性と表示名の設定を格納した辞書
     """
+    # 条件を属性として格納する辞書
     attribute_dict: dict[str, list[int]] = {}
 
     for mini_ap in range(len(iv.MINI_AP_ON_OFF_LIST)):
@@ -16,35 +17,35 @@ def make_attribute_dict() -> dict[str, list[int]]:
             for concentrate in range(len(iv.CONCENTRATE_ON_OFF_LIST)):
                 for cast in range(len(iv.CAST_ON_OFF_LIST)):
                     for output_type in range(len(iv.OUTPUT_TYPE_LIST)):
-                        # 各名前の取得
-                        mini_ap_name_str = iv.MINI_AP_ON_OFF_LIST[mini_ap]
-                        yur_name_str = iv.YUR_ON_OFF_LIST[yur]
-                        concentrate_name_str = iv.CONCENTRATE_ON_OFF_LIST[concentrate]
-                        cast_name_str = iv.CAST_ON_OFF_LIST[cast]
+                        # 各属性の条件の名前の取得
+                        mini_ap_name: str = iv.MINI_AP_ON_OFF_LIST[mini_ap]
+                        yur_name: str = iv.YUR_ON_OFF_LIST[yur]
+                        concentrate_name: str = iv.CONCENTRATE_ON_OFF_LIST[concentrate]
+                        cast_name: str = iv.CAST_ON_OFF_LIST[cast]
 
                         # 最初に小APの名前を設定
-                        dict_name = mini_ap_name_str
+                        dict_name: str = mini_ap_name
 
                         # 次にYURの名前を設定
-                        if yur_name_str != "なし":
+                        if yur_name != "なし":
                             if dict_name != "なし":
-                                dict_name = dict_name + "＋" + yur_name_str
+                                dict_name = dict_name + "＋" + yur_name
                             else:
-                                dict_name = yur_name_str
+                                dict_name = yur_name
 
                         # 次に集中の有無を名前に設定
-                        if concentrate_name_str != "なし":
+                        if concentrate_name != "なし":
                             if dict_name != "なし":
-                                dict_name = dict_name + "＋" + concentrate_name_str
+                                dict_name = dict_name + "＋" + concentrate_name
                             else:
-                                dict_name = concentrate_name_str
+                                dict_name = concentrate_name
 
                         # 次にギプスの名前を設定
-                        if cast_name_str != "なし":
+                        if cast_name != "なし":
                             if dict_name != "なし":
-                                dict_name = dict_name + "＋" + cast_name_str
+                                dict_name = dict_name + "＋" + cast_name
                             else:
-                                dict_name = cast_name_str
+                                dict_name = cast_name
 
                         # 最後に出力内容を名前に追加
                         dict_name = dict_name + "（" + \
@@ -57,7 +58,7 @@ def make_attribute_dict() -> dict[str, list[int]]:
     return attribute_dict
 
 
-def make_sheet_name_from_attribute_list(attribute_list: list[int]) -> str:
+def make_sheet_name_from_attribute_list(in_att_list: list[int]) -> str:
     """attribute_listからシート名を作成する
 
     attribute_listの要素は、[小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象]の順で格納されている。
@@ -65,42 +66,45 @@ def make_sheet_name_from_attribute_list(attribute_list: list[int]) -> str:
     （例：すべて「なし」(0, 0, 0, 0, 0)なら、左から番号をつなぎ合わせて「00000」を返す。）
 
     Args:
-        attribute_list (list[int]): 属性のリスト（小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象）
+        in_att_list (list[int]): 属性のリスト（小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象）
 
     Returns:
         str: 作成されたシート名
     """
-    sheet_name_str = ""
+    # シート名を設定
+    sheet_name: str = ""
 
-    for i in attribute_list:
-        sheet_name_str += str(i)
+    for i in in_att_list:
+        sheet_name += str(i)
 
-    return sheet_name_str
+    return sheet_name
 
 
-def separate_output_name_and_type(input_str: str) -> tuple[str, str]:
+def separate_output_name_and_type(in_dict_name: str) -> tuple[str, str]:
     """出力対象の名前と出力対象の種類を分離する
 
     Args:
-        input_str (str): 出力対象の名前と種類が結合された文字列（例："小AP＋YUR＋イマイチ＋ギプス（期待値）"）
+        in_dict_name (str): 出力対象の名前と種類が結合された文字列（例："小AP＋YUR＋イマイチ＋ギプス（期待値）"）
 
     Returns:
         tuple[str, str]: 出力対象の名前と種類のタプル（例：("小AP＋YUR＋イマイチ＋ギプス", "期待値")）
     """
-    name_start_index = input_str.find("（")
-    name_end_index = input_str.find("）")
+    # "（"と"）"のそれぞれの文字の位置を探す
+    name_start_index: int = in_dict_name.find("（")
+    name_end_index: int = in_dict_name.find("）")
     if name_start_index != -1 and name_end_index != -1:
-        output_name: str = input_str[:name_start_index]
-        output_type: str = input_str[name_start_index + 1:name_end_index]
+        # 見つかったら、分離する
+        output_name: str = in_dict_name[:name_start_index]
+        output_type: str = in_dict_name[name_start_index + 1:name_end_index]
         return output_name, output_type
-    return input_str, ""  # "（" または "）" が見つからない場合は、元の文字列を返す
+    return in_dict_name, ""  # "（" または "）" が見つからない場合は、元の文字列を返す
 
 
-def read_csv_file(file_path: str) -> list[list[str]]:
+def read_csv_file(in_filepath: str) -> list[list[str]]:
     """CSVファイルを読み込み、内容をリストとして返す
 
     Args:
-        file_path (str): 読み込むCSVファイルのパス
+        in_filepath (str): 読み込むCSVファイルのパス
 
     Returns:
         list[list[str]]: CSVファイルの内容を格納したリスト
@@ -108,8 +112,9 @@ def read_csv_file(file_path: str) -> list[list[str]]:
     Raises:
         ValueError: 列数が足りない行がある場合
     """
+    # CSVファイルの情報を格納するリスト
     data_list: list[list[str]] = []
-    with open(file_path, mode='r', encoding='utf-8') as csvfile:
+    with open(in_filepath, mode='r', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
             if len(row) < iv.REQUIRED_COLUMN_COUNT:
@@ -121,7 +126,7 @@ def read_csv_file(file_path: str) -> list[list[str]]:
     return data_list
 
 
-def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
+def sort_and_omit_value_lists_to_str(in_val_list: list[int]) -> str:
     """入力したリストをソートしたうえで、3つ連続する箇所があれば「～」で省略した上で文字列で出力
 
     Args:
@@ -131,7 +136,7 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
         str: ソートないし、省略された文字列
     """
     # ソートされたリスト
-    sorted_list: list[int] = sorted(in_list)
+    sorted_list: list[int] = sorted(in_val_list)
 
     # リストの最大長
     sorted_list_length: int = len(sorted_list)
@@ -199,13 +204,13 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
     return output_str
 
 
-def is_train_pattern(pattern_name: str) -> bool:
+def is_train_pattern(in_pattern_name: str) -> bool:
     """大練習・小練習のパターンか（自主トレ参加や大練習マイナスは含まない）
 
     Args:
-        pattern_name (str): 判定するパターンの名前
+        in_pattern_name (str): 判定するパターンの名前
 
     Returns:
         bool: 判定結果
     """
-    return "_train_ex" in pattern_name
+    return "_train_ex" in in_pattern_name

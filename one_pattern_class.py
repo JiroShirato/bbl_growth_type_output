@@ -234,10 +234,8 @@ class OnePattern:
             OnePattern: パターン処理
         """
         # 数値が存在する（文字列の長さが1以上、つまり空文字ではない）ときは数値に変換、そうでないならNone
-        min_val: int | None = int(min_val_str) if len(
-            min_val_str) > 0 else None
-        max_val: int | None = int(max_val_str) if len(
-            max_val_str) > 0 else None
+        min_val: int | None = int(min_val_str) if len(min_val_str) > 0 else None
+        max_val: int | None = int(max_val_str) if len(max_val_str) > 0 else None
 
         # 最小値のほうが大きい場合は、最大値と入れ替える（数値の存在も確認したうえで）
         if (min_val is not None) and (max_val is not None) and (min_val > max_val):
