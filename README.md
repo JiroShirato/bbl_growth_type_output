@@ -134,7 +134,7 @@ UTF-8（BOMなし）、ヘッダーなし、1行7列で用意します。1行が
 
 「初期設定」と書いた加算値と倍率は、[init_values.py](./init_values.py) で変更できます。倍率は小数点以下1桁までで指定してください。
 
-自主トレ参加は、小練習の元の最小値・最大値をそれぞれ3倍した範囲の整数から作成し、上記の補正は適用しません。具体的な対象判定と鍛錬の処理は [main.py](./main.py) の `calc_growth_patterns()` と、[one_pattern_class.py](./one_pattern_class.py) を参照してください。
+自主トレ参加は、小練習の元の最小値・最大値をそれぞれ3倍した範囲の整数から作成し、上記の補正は適用しません。具体的な対象判定と鍛錬の処理は [sub_functions.py](./sub_functions.py) の `calc_growth_patterns()` と、[one_pattern_class.py](./one_pattern_class.py) を参照してください。
 
 ## エラーと終了コード
 
@@ -201,7 +201,8 @@ pycodestyleは `pyproject.toml` の設定を読まないため、行の上限と
 
 | ファイル | 役割 |
 |---|---|
-| [main.py](./main.py) | 計算の組み立て、Excel出力、コマンドライン処理 |
+| [main.py](./main.py) | 処理全体の流れ（CSVの読み込み、シートごとの計算と出力、保存）、コマンドライン処理 |
+| [sub_functions.py](./sub_functions.py) | 計算の組み立て、Excel出力 |
 | [one_pattern_class.py](./one_pattern_class.py) | `OnePattern` クラス。出現値・頻度・期待値の計算、`OnePattern` クラスの生成 |
 | [ext_functions.py](./ext_functions.py) | CSV読み込み、条件名とシート名の生成、出現値の文字列化 |
 | [init_values.py](./init_values.py) | 入出力の初期値、補正条件、補正の加算値と倍率（倍率は小数点以下1桁まで）、出力列の定義 |

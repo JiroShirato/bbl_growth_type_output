@@ -68,12 +68,12 @@ class OnePattern:
         """
         self.values_list = [a_val + in_val for a_val in self.values_list]
 
-    def mul_ex_point(self, in_val: float, floor_flag: bool = True) -> None:
+    def mul_ex_point(self, in_val: float, is_floor: bool = True) -> None:
         """各出現値に固定値を乗算
 
         Args:
             in_val (float): 乗算する値、小数点一桁以内の値を入力すること
-            floor_flag (bool, optional): 結果を切り捨てるかどうかのフラグ（falseなら切り上げる）。 入力がない時は True
+            is_floor (bool, optional): 結果を切り捨てるかどうかのフラグ（falseなら切り上げる）。 入力がない時は True
 
         Raises:
             ValueError: 倍率が有限でない、または小数点以下1桁を超える場合。
@@ -87,7 +87,7 @@ class OnePattern:
         if in_val != factor / 10:
             raise ValueError(f"倍率は小数点以下1桁までで指定してください: {in_val}")
 
-        if floor_flag:
+        if is_floor:
             self.values_list = [a_val * factor // 10 for a_val in self.values_list]
         else:
             self.values_list = [-(-a_val * factor // 10) for a_val in self.values_list]
@@ -143,33 +143,33 @@ class OnePattern:
         """
         self._add_ex_point_from_integer_list(self.concentrate_add_values_list)
 
-    def add_proactive_ex_point(self, exec_flag: bool) -> None:
+    def add_proactive_ex_point(self, is_exec: bool) -> None:
         """積極鍛錬向けの経験値加算処理
 
         Args:
-            exec_flag (bool): 実行条件に該当するかのフラグ
+            is_exec (bool): 実行条件に該当するかのフラグ
         """
-        if exec_flag:
+        if is_exec:
             self._add_ex_point_from_integer_list(
                 self.proactive_add_values_list)
 
-    def sub_proactive_ex_point(self, exec_flag: bool) -> None:
+    def sub_proactive_ex_point(self, is_exec: bool) -> None:
         """積極鍛錬向けの経験値減少処理
 
         Args:
-            exec_flag (bool): 実行条件に該当するかのフラグ
+            is_exec (bool): 実行条件に該当するかのフラグ
         """
-        if exec_flag:
+        if is_exec:
             self._add_ex_point_from_integer_list(
                 self.proactive_sub_values_list)
 
-    def div_cautious_ex_point(self, exec_flag: bool) -> None:
+    def div_cautious_ex_point(self, is_exec: bool) -> None:
         """慎重鍛錬向けの経験値除算処理
 
         Args:
-            exec_flag (bool): 実行条件に該当するかのフラグ
+            is_exec (bool): 実行条件に該当するかのフラグ
         """
-        if exec_flag:
+        if is_exec:
             self.div_ex_point_with_ceil_and_floor(2)
 
     def add_precise_ex_point(self) -> None:
