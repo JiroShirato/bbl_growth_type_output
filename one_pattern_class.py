@@ -81,18 +81,16 @@ class OnePattern:
         if not math.isfinite(in_val):
             raise ValueError(f"倍率は有限の数値で指定してください: {in_val}")
 
-        # 諸数点一桁の乗算の係数を10倍して四捨五入
+        # 小数点一桁の乗算の係数を10倍して四捨五入
         factor: int = round(in_val * 10)
 
         if in_val != factor / 10:
             raise ValueError(f"倍率は小数点以下1桁までで指定してください: {in_val}")
 
         if floor_flag:
-            self.values_list = [a_val * factor //
-                                10 for a_val in self.values_list]
+            self.values_list = [a_val * factor // 10 for a_val in self.values_list]
         else:
-            self.values_list = [-(-a_val * factor // 10)
-                                for a_val in self.values_list]
+            self.values_list = [-(-a_val * factor // 10) for a_val in self.values_list]
 
     def div_ex_point_with_ceil_and_floor(self, in_val: int) -> None:
         """各出現値に固定値を除算（切り捨てと切り上げが半々の確率で出現）
