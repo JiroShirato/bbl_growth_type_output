@@ -137,7 +137,7 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
     sorted_list_length: int = len(sorted_list)
 
     # 範囲が連続しているかのフラグ
-    sequence_flag: bool = True
+    is_range_sequence: bool = True
 
     # 出力文字列
     output_str: str = ""
@@ -159,10 +159,10 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
             if (sorted_list[max_point-1] + 1) == sorted_list[max_point]:
                 max_point += 1
                 # 連続フラグをオンにする
-                sequence_flag = True
+                is_range_sequence = True
             else:
                 # 隣同士が連続していない
-                if sequence_flag and min_point + 2 < max_point:
+                if is_range_sequence and min_point + 2 < max_point:
                     # 左の確認ポイントとの差が2つ以上で連続していたのなら、省略文字「～」で括る
                     output_str = output_str + "～" + \
                         str(sorted_list[max_point-1])
@@ -175,7 +175,7 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
                 if (max_point + 1) < sorted_list_length:
                     output_str = output_str + "," + str(sorted_list[max_point])
                 # 連続フラグをオフにする
-                sequence_flag = False
+                is_range_sequence = False
                 # 左の確認ポイントを右の確認ポイントに置き換えて、右の確認ポイントを一つ追加する
                 min_point = max_point
                 max_point = max_point + 1
@@ -185,7 +185,7 @@ def sort_and_omit_value_lists_to_str(in_list: list[int]) -> str:
 
         # 出力文字列が最後の数値の文字列表現で終わっていないとき
         if not output_str.endswith(str(last_list_value)):
-            if sequence_flag and min_point + 2 < max_point:
+            if is_range_sequence and min_point + 2 < max_point:
                 # 隣同士が連続している（差が1）なら「～」で省略
                 output_str = output_str + "～" + str(last_list_value)
             else:
