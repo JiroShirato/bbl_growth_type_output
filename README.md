@@ -1,33 +1,43 @@
 # BBL 成長期別経験値のExcel出力
 
-Baseball Life（BBL）の成長期ごとの経験値範囲をCSVから読み込み、補正条件別の出現値と期待値をExcelに出力するPythonプログラムです。
+野球系Webゲームの[Baseball Life（BBL）](https://baseball-life.games/)の経験値を計算するPythonプログラムです。
+BBLでは、選手の登録時に決まる成長型と年齢によって成長期が決まり、成長期ごとに練習で得られる経験値の範囲が異なります。このプログラムは、成長期ごとの経験値範囲をCSVから読み込み、補正条件別の出現値と期待値をExcelに出力します。
 
 小AP・YUR・集中／イマイチ・筋肉養成ギプスの組み合わせをシートに分け、AP、メンタリスト、各鍛錬、自主トレ参加の結果を列ごとに出力します。
 
-この文書は現在の実装を説明しています。ゲームの最新仕様との一致を保証するものではありません。
+この文書は、BBLの2026年9月29日現在の実装（Ver. 0.4.3.6）を元に説明しています。ゲームの最新仕様との一致を保証するものではありません。
+
+本ツールは個人が作成した非公式ツールで、Baseball Life の運営とは関係ありません。
 
 ## 必要な環境
 
 - Python 3.14以上
 - openpyxl 3.1.5以上
-- uv（以下の環境構築手順で使用）
+- [uv]( https://docs.astral.sh/uv/)（以下の環境構築手順で使用）
 
 依存関係は [pyproject.toml](./pyproject.toml)、解決済みのバージョンは [uv.lock](./uv.lock) で管理しています。
 
 ## 環境構築と実行
 
+最初に、このリポジトリをローカルにcloneを実施します。
+
+```sh
+git clone https://github.com/JiroShirato/bbl_growth_type_output.git
+cd bbl_growth_type_output 
+```
+
 このプロジェクトのフォルダーをターミナルで開き、実行します。
 
-```powershell
+```sh
 uv sync
 uv run python main.py
 ```
 
-初期設定では [import.csv](./import.csv) を読み込み、作業フォルダーに `output.xlsx` を保存します。
+初期設定では成長期毎に設定されている3種類（小練習/大練習/大練習マイナス）の無補正の経験値の出現値を記載した [import.csv](./import.csv) を読み込み、作業フォルダーに `output.xlsx` を保存します。
 
 入出力を指定する場合:
 
-```powershell
+```sh
 uv run python main.py -i import.csv -o result.xlsx
 ```
 
@@ -41,10 +51,16 @@ uv run python main.py -i import.csv -o result.xlsx
 
 出力先のフォルダーは事前に作成してください。同名の出力ファイルは確認なしで上書きされます。保存先のExcelファイルを開いている場合は、閉じてから実行してください。
 
-既存のWindows仮想環境で直接実行することもできます。
+既存の仮想環境で直接実行することもできます。
 
+### Windowsでの実行例
 ```powershell
 .\.venv\Scripts\python.exe main.py -i import.csv -o result.xlsx
+```
+
+### Linux/macOSでの実行例
+```bash
+./.venv/bin/python main.py -i import.csv -o result.xlsx
 ```
 
 ## 入力CSV
@@ -196,3 +212,7 @@ pycodestyleは `pyproject.toml` の設定を読まないため、行の上限と
 `OnePattern` の `get_values_list()` は内部リストをそのまま返します。`copy()` は別のリストを持つ複製を返します。
 
 依存パッケージを追加する場合は、例えば `uv add openpyxl` を実行します。開発用のツールは `uv add --dev autopep8` のように `--dev` を付けて追加します。設定内のパターン識別子や条件の並び順は計算処理でも使用しているため、変更時は参照側との整合性も確認してください。
+
+## ライセンス
+
+[MIT License](./LICENSE) で公開しています。
