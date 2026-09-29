@@ -143,8 +143,8 @@ def add_mentalist_patterns(ptn_dict: dict[str, opc.OnePattern]) -> None:
             # 大練習と小練習が対象なら、メンタリストを表す"mental_"の名前を追加
             add_one_pattern_name: str = "mental_" + one_pattern_name
         elif one_pattern_name.startswith("other_ap_"):
-            # 1.5倍APなら、名前をメンタリストを表す"mental_"に変更
-            add_one_pattern_name = one_pattern_name.replace("other_", "mental_")
+            # 1.5倍APを表す"other_ap_"なら、名前を精神APメンタリストを表す"mental_ap_"に変更
+            add_one_pattern_name = one_pattern_name.replace("other_ap_", "mental_ap_")
         else:
             # 上記の経験値パターン以外は対応しない
             continue
