@@ -5,7 +5,7 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-# プロジェクトのルートを import のパスに追加（テストの実行場所に依存しないようにする）
+# プロジェクトのルートを import のパスに追加(テストの実行場所に依存しないようにする)
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
@@ -14,7 +14,7 @@ import main  # noqa: E402
 # 入力CSV
 INPUT_CSV_PATH = PROJECT_DIR / "import.csv"
 
-# 比較の基準となる出力Excel（import.csv から出力した、正しいと確認済みの結果）
+# 比較の基準となる出力Excel(import.csv から出力した、正しいと確認済みの結果)
 EXPECTED_EXCEL_PATH = Path(__file__).resolve().parent / "expected_output.xlsx"
 
 
@@ -60,7 +60,7 @@ class TestRegression(unittest.TestCase):
                 # シート名と並び順
                 self.assertEqual(expected_wb.sheetnames, actual_wb.sheetnames)
 
-                # 各シートの全セル（値のある行数・列数の違いも差分として検出する）
+                # 各シートの全セル(値のある行数・列数の違いも差分として検出する)
                 for sheet_name in expected_wb.sheetnames:
                     with self.subTest(sheet=sheet_name):
                         expected_rows = read_sheet_values(

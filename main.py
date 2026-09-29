@@ -10,16 +10,18 @@ import sub_functions as sub
 
 
 def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUTPUT_EXCEL_NAME_STR) -> None:
-    """各成長期の出現値のパターンをExcelに出力
-    Baseball Life(BBL)における成長型に割り当てられる成長期のパターンから
+    """各成長期で、練習時に出現する経験値(出現値)のパターンをExcelに出力
+    Baseball Life(BBL)における成長型に割り当てられる成長期の経験値パターンから
     各補正が乗った時の出現する経験値を自動で計算するプログラム
 
-    すべての練習に乗るパターン（例：小AP、筋肉養成ギプス）をシートに分けて
+    すべての練習に乗る経験値パターン(例：小AP、筋肉養成ギプス)をシートに分けて
     選手のAPや共通能力、また結婚した嫁の能力で変わる部分は同じシートに別々の列で出力を行う
 
     Args:
-        input_file (str): 成長期と練習の無補正時の出現値の幅を記録した入力CSVファイル。入力がない時は init_values.py で設定された INPUT_CSV_FILE_NAME_STR を参照
-        output_file (str): 各シートにパターンを出力したExcelファイル（拡張子 .xlsx）。 入力がない時は init_values.py で設定された OUTPUT_EXCEL_NAME_STR を参照
+        input_file (str): 成長期と練習の無補正時の出現値の幅を記録した入力CSVファイル。
+            入力がない時は init_values.py で設定された INPUT_CSV_FILE_NAME_STR を参照
+        output_file (str): 各シートに経験値パターンを出力したExcelファイル(拡張子 .xlsx)。
+            入力がない時は init_values.py で設定された OUTPUT_EXCEL_NAME_STR を参照
 
     Raises:
         OSError: 入力ファイルの読み込み、またはExcelの保存に失敗した場合。
@@ -29,10 +31,10 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
         UnicodeDecodeError: 入力CSVをUTF-8として読み込めない場合。
     """
 
-    # シートの出力先の名前をkeyとして設定する属性を格納する辞書（小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象）
+    # シートの出力先の名前をkeyとして設定する属性を格納する辞書(小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象)
     attribute_dict: dict[str, list[int]] = ef.make_attribute_dict()
 
-    # CSVから読み出した成長期のパターン名と小練習、大練習、大練習マイナスの数をCSVファイルから取得
+    # CSVから読み出した成長期の経験値パターン名と小練習、大練習、大練習マイナスの数をCSVファイルから取得
     try:
         all_growth_ex_values_list: list[list[str]] = ef.read_csv_file(input_file)
     except OSError as e:
@@ -42,15 +44,15 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
     if not all_growth_ex_values_list:
         raise ValueError(f"入力CSVにデータがありません: {input_file}")
 
-    # 新しいブックを作成（初期シートは削除）
+    # 新しいブックを作成(初期シートは削除)
     wb = Workbook()
     wb.remove(wb.active)
 
     for condition_name, attribute_list in attribute_dict.items():
-        # 全ての経験値パターン（出現値と頻度）を格納する辞書（引数は成長期,出現パターン）
+        # 全ての経験値パターン(出現値と頻度)を格納する辞書(引数は成長期,出現経験値パターン)
         all_ex_pattern_dict: dict[str, dict[str, opc.OnePattern]] = {}
 
-        # 経験値パターン毎に各条件下の経験値のパターンを計算
+        # 経験値パターン毎に定められた出現値と頻度を計算
         for a_growth_ex_values_list in all_growth_ex_values_list:
             growth_name: str = a_growth_ex_values_list[0]
             all_ex_pattern_dict[growth_name] = sub.calc_growth_patterns(a_growth_ex_values_list, attribute_list)

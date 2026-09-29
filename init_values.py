@@ -1,7 +1,7 @@
-# 読み込むCSVのファイル名（コマンドで指定しない場合）
+# 読み込むCSVのファイル名(コマンドで指定しない場合)
 INPUT_CSV_FILE_NAME_STR = "import.csv"
 
-# 出力するExcelのファイル名（コマンドで指定しない場合）
+# 出力するExcelのファイル名(コマンドで指定しない場合)
 OUTPUT_EXCEL_NAME_STR = "output.xlsx"
 
 # 入力CSVの1行あたりの必要な列数

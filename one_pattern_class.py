@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 class OnePattern:
 
-    # 出現値
+    # 出現値(出現する経験値)
     values_list: list[int]
 
     # 頻度(期待値算出用)
@@ -27,8 +27,8 @@ class OnePattern:
 
     def __init__(self, min_val: int | None = None, max_val: int | None = None) -> None:
         """コンストラクタ
-        最大値（max_val）と最小値（min_val）が入力された時は、
-        その連番を出現値リストに格納する。（頻度は1で初期化）
+        最大値と最小値が引数に入力された時は、
+        その連番を出現値リストに格納する。(頻度は1で初期化)
         そうでない時は、出現値リストと頻度リストを空で初期化する。
 
         Args:
@@ -39,7 +39,7 @@ class OnePattern:
         self.frequency_list = []
         self.expected_value = None
         if (min_val is not None) and (max_val is not None):
-            # 最大値と最小値が入力された時は、その連番を出現値リストに格納する。（頻度は1で初期化）
+            # 最大値と最小値が入力された時は、その連番を出現値リストに格納する。(頻度は1で初期化)
             for i in range(min_val, max_val+1):
                 self.values_list.append(i)
                 self.frequency_list.append(1)
@@ -48,7 +48,7 @@ class OnePattern:
         """出現値のリストを取得
 
         Returns:
-            list[int]: 出現値のリスト（内部リスト）
+            list[int]: 出現値のリスト(内部リスト)
         """
         return self.values_list
 
@@ -56,52 +56,52 @@ class OnePattern:
         """期待値を取得
 
         Returns:
-            float | None: 期待値（存在しないなら None）
+            float | None: 期待値(存在しないなら None)
         """
         return self.expected_value
 
-    def add_ex_point(self, in_val: int) -> None:
+    def add_ex_point(self, add_val: int) -> None:
         """各出現値に固定値を加算
 
         Args:
-            in_val (int): 加算する経験値
+            add_val (int): 加算する経験値
         """
-        self.values_list = [a_val + in_val for a_val in self.values_list]
+        self.values_list = [a_val + add_val for a_val in self.values_list]
 
-    def mul_ex_point(self, in_val: float, is_floor: bool = True) -> None:
+    def mul_ex_point(self, mul_val: float, is_floor: bool = True) -> None:
         """各出現値に固定値を乗算
 
         Args:
-            in_val (float): 乗算する値、小数点一桁以内の値を入力すること
-            is_floor (bool, optional): 結果を切り捨てるかどうかのフラグ（falseなら切り上げる）。 入力がない時は True
+            mul_val (float): 乗算する値、小数点一桁以内の値を入力すること
+            is_floor (bool, optional): 結果を切り捨てるかどうかのフラグ(falseなら切り上げる)。 入力がない時は True
 
         Raises:
             ValueError: 倍率が有限でない、または小数点以下1桁を超える場合。
         """
-        if not math.isfinite(in_val):
-            raise ValueError(f"倍率は有限の数値で指定してください: {in_val}")
+        if not math.isfinite(mul_val):
+            raise ValueError(f"倍率は有限の数値で指定してください: {mul_val}")
 
         # 小数点一桁の乗算の係数を10倍して四捨五入
-        factor: int = round(in_val * 10)
+        factor: int = round(mul_val * 10)
 
-        if in_val != factor / 10:
-            raise ValueError(f"倍率は小数点以下1桁までで指定してください: {in_val}")
+        if mul_val != factor / 10:
+            raise ValueError(f"倍率は小数点以下1桁までで指定してください: {mul_val}")
 
         if is_floor:
             self.values_list = [a_val * factor // 10 for a_val in self.values_list]
         else:
             self.values_list = [-(-a_val * factor // 10) for a_val in self.values_list]
 
-    def div_ex_point_with_ceil_and_floor(self, in_val: int) -> None:
-        """各出現値に固定値を除算（切り捨てと切り上げが半々の確率で出現）
+    def div_ex_point_with_ceil_and_floor(self, div_val: int) -> None:
+        """各出現値に固定値を除算(切り捨てと切り上げが半々の確率で出現)
 
         Args:
-            in_val (int): 除算する値
+            div_val (int): 除算する値
         """
         pairs = list(zip(self.values_list, self.frequency_list))
         self._set_merged_values(
-            [(math.floor(v / in_val), f) for v, f in pairs]
-            + [(math.ceil(v / in_val), f) for v, f in pairs]
+            [(math.floor(v / div_val), f) for v, f in pairs]
+            + [(math.ceil(v / div_val), f) for v, f in pairs]
         )
 
     def _add_ex_point_from_integer_list(self, add_vals: tuple[int, ...]) -> None:
@@ -180,13 +180,13 @@ class OnePattern:
 
         for a_val in self.values_list:
             if a_val > 5:
-                # 6以上（経験値が5を超えている）なら+2
+                # 6以上(経験値が5を超えている)なら+2
                 temp_values_list.append(a_val + 2)
             elif a_val > 0:
-                # 1以上（経験値が0を超えている）なら+1
+                # 1以上(経験値が0を超えている)なら+1
                 temp_values_list.append(a_val + 1)
             else:
-                # それ以外（経験値が0以下）ならそのまま
+                # それ以外(経験値が0以下)ならそのまま
                 temp_values_list.append(a_val)
 
         # 出現値のリストを更新
@@ -208,10 +208,10 @@ class OnePattern:
             self.expected_value = None
 
     def copy(self) -> OnePattern:
-        """出現値・頻度・期待値を複製した、新しいインスタンスを返す
+        """出現値・頻度・期待値を複製した、新しい経験値パターンのインスタンスを返す
 
         Returns:
-            OnePattern: 複製したインスタンス（リストは別オブジェクト）
+            OnePattern: 複製したインスタンス(リストは別オブジェクト)
         """
         new_pattern = OnePattern()
         new_pattern.values_list = list(self.values_list)
@@ -221,8 +221,8 @@ class OnePattern:
 
     @classmethod
     def from_strings(cls, min_val_str: str, max_val_str: str) -> OnePattern:
-        """パターンの最大値と最小値を入力して、パターンのインスタンスを返す
-        最大値と最小値の値が存在する（文字列が1以上）かを判定する。
+        """経験値パターンの最大値と最小値を入力して、経験値パターンのインスタンスを返す
+        最大値と最小値の値が存在する(文字列が1以上)かを判定する。
         少なくとも片方が存在しないなら、内部のリストが空のインスタンスを返す。
         もし、最大値よりも最小値の方が大きいなら、この段階で入れ替える。
 
@@ -231,13 +231,13 @@ class OnePattern:
             max_val_str (str): 最大値。
 
         Returns:
-            OnePattern: パターン処理
+            OnePattern: 最大値と最小値を記録したインスタンス
         """
-        # 数値が存在する（文字列の長さが1以上、つまり空文字ではない）ときは数値に変換、そうでないならNone
+        # 数値が存在する(文字列の長さが1以上、つまり空文字ではない)ときは数値に変換、そうでないならNone
         min_val: int | None = int(min_val_str) if len(min_val_str) > 0 else None
         max_val: int | None = int(max_val_str) if len(max_val_str) > 0 else None
 
-        # 最小値のほうが大きい場合は、最大値と入れ替える（数値の存在も確認したうえで）
+        # 最小値のほうが大きい場合は、最大値と入れ替える(数値の存在も確認したうえで)
         if (min_val is not None) and (max_val is not None) and (min_val > max_val):
             min_val, max_val = max_val, min_val
 
