@@ -24,31 +24,31 @@ def calc_growth_patterns(gro_ex_list: list[str], att_list: list[int]) -> dict[st
     # 成長期の名前
     growth_name: str = gro_ex_list[0]
 
-    # 成長期における経験値パターンを格納する辞書(小練習/大練習/大練習マイナス/自主トレ参加 を最初に取得)
+    # 成長期における経験値パターンを格納する辞書(非AP小練習/非AP大練習/大練習マイナス/自主トレ参加 を最初に取得)
     patterns_dict: dict[str, opc.OnePattern] = create_base_patterns(gro_ex_list)
 
-    # 1. 小APによる経験値追加処理
+    # 1. 小APによる経験値加算処理
     if mini_ap == 1:
         add_value_to_train_patterns(patterns_dict, iv.MINI_AP_ADD_VALUE)
 
-    # 2. APによる経験値倍増処理
+    # 2. APによる経験値乗算処理
     add_ap_patterns(patterns_dict)
 
-    # 3. YURによる経験値追加処理
+    # 3. YURによる経験値加算処理
     if yur == 1:
         add_value_to_train_patterns(patterns_dict, iv.YUR_ADD_VALUE)
 
-    # 4. メンタリスト能力持ちの嫁追加処理
+    # 4. メンタリスト能力持ちの嫁による経験値乗算処理
     add_mentalist_patterns(patterns_dict)
 
-    # 5. 集中、及びイマイチやる気が出ない…による経験値加減処理
+    # 5. 集中、及びイマイチやる気が出ない…による経験値加算、または除算処理
     if concentrate != 0:
         apply_concentrate(patterns_dict, concentrate)
 
     # 6. 各鍛錬による補正
     add_training_patterns(patterns_dict, growth_name)
 
-    # 7. 筋肉養成ギプスの適用
+    # 7. 筋肉養成ギプスの適用による経験値乗算補正
     if cast == 1:
         apply_cast(patterns_dict)
 
@@ -61,7 +61,7 @@ def calc_growth_patterns(gro_ex_list: list[str], att_list: list[int]) -> dict[st
 
 
 def create_base_patterns(gro_ex_list: list[str]) -> dict[str, opc.OnePattern]:
-    """CSVの1行から、基本となる経験値パターン(小練習、大練習、大練習マイナス、自主トレ参加)を作成
+    """CSVの1行から、基本となる経験値パターン(非AP小練習、非AP大練習、大練習マイナス、自主トレ参加)を作成
 
     Args:
         gro_ex_list (list[str]): CSVの1行(成長期名と各練習の最小値・最大値)
@@ -72,11 +72,11 @@ def create_base_patterns(gro_ex_list: list[str]) -> dict[str, opc.OnePattern]:
     # 基本となる経験値パターンを格納する辞書
     patterns_dict: dict[str, opc.OnePattern] = {}
 
-    # 小練習の値の取得
+    # 非AP小練習の値の取得
     small_opc: opc.OnePattern = opc.OnePattern.from_strings(gro_ex_list[1], gro_ex_list[2])
     patterns_dict["small_train_ex"] = small_opc
 
-    # 大練習の値の取得
+    # 非AP大練習の値の取得
     large_opc: opc.OnePattern = opc.OnePattern.from_strings(gro_ex_list[3], gro_ex_list[4])
     patterns_dict["large_train_ex"] = large_opc
 
@@ -84,7 +84,7 @@ def create_base_patterns(gro_ex_list: list[str]) -> dict[str, opc.OnePattern]:
     minus_opc: opc.OnePattern = opc.OnePattern.from_strings(gro_ex_list[6], gro_ex_list[5])
     patterns_dict["large_minus_ex"] = minus_opc
 
-    # 自主トレ参加の値の取得(小練習の値を使用、小練習の値がない場合はインスタンスだけ作る)
+    # 自主トレ参加の値の取得(非AP小練習の値を使用、非AP小練習の値がない場合はインスタンスだけ作る)
     small_opc_list: list[int] = small_opc.get_values_list()
     if len(small_opc_list) == 0:
         patterns_dict["participate_independent_training_ex"] = opc.OnePattern()
@@ -140,10 +140,10 @@ def add_mentalist_patterns(ptn_dict: dict[str, opc.OnePattern]) -> None:
 
     for one_pattern_name, one_pattern in ptn_dict.items():
         if one_pattern_name == "large_train_ex" or one_pattern_name == "small_train_ex":
-            # 大練習と小練習が対象なら、メンタリストの名前"mental_"を追加
+            # 大練習と小練習が対象なら、メンタリストを表す"mental_"の名前を追加
             add_one_pattern_name: str = "mental_" + one_pattern_name
         elif one_pattern_name.startswith("other_ap_"):
-            # 1.5倍APなら、名前をメンタリスト"mental_"に変更
+            # 1.5倍APなら、名前をメンタリストを表す"mental_"に変更
             add_one_pattern_name = one_pattern_name.replace("other_", "mental_")
         else:
             # 上記の経験値パターン以外は対応しない
@@ -277,7 +277,7 @@ def make_precise_patterns(ptn_dict: dict[str, opc.OnePattern]) -> dict[str, opc.
 
     for one_pattern_name, one_pattern in ptn_dict.items():
         if "small_train" in one_pattern_name:
-            # 新しい経験値パターンを作成し、加算処理を実施
+            # 小練習なら、新しい経験値パターンを作成し加算処理を実施
             add_one_pattern_name: str = "precise_" + one_pattern_name
             add_ptn_dict[add_one_pattern_name] = one_pattern.copy()
             add_ptn_dict[add_one_pattern_name].add_precise_ex_point()

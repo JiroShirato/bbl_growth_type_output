@@ -81,7 +81,7 @@ class OnePattern:
         if not math.isfinite(mul_val):
             raise ValueError(f"倍率は有限の数値で指定してください: {mul_val}")
 
-        # 小数点一桁の乗算の係数を10倍して四捨五入
+        # 小数点一桁の係数を10倍して四捨五入
         factor: int = round(mul_val * 10)
 
         if mul_val != factor / 10:

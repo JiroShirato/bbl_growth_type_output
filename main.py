@@ -34,7 +34,7 @@ def main(input_file: str = iv.INPUT_CSV_FILE_NAME_STR, output_file: str = iv.OUT
     # シートの出力先の名前をkeyとして設定する属性を格納する辞書(小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象)
     attribute_dict: dict[str, list[int]] = ef.make_attribute_dict()
 
-    # CSVから読み出した成長期の経験値パターン名と小練習、大練習、大練習マイナスの数をCSVファイルから取得
+    # CSVから読み出した成長期の経験値パターン名と非AP小練習、非AP大練習、大練習マイナスの数をCSVファイルから取得
     try:
         all_growth_ex_values_list: list[list[str]] = ef.read_csv_file(input_file)
     except OSError as e:
