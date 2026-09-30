@@ -23,7 +23,7 @@ BBLでは、選手の登録時に決まる成長型と年齢によって成長�
 
 ```sh
 git clone https://github.com/JiroShirato/bbl_growth_type_output.git
-cd bbl_growth_type_output
+cd bbl_growth_type_output/all_patterns_for_spreadsheet
 ```
 
 このプロジェクトのフォルダーをターミナルで開き、実行します。
