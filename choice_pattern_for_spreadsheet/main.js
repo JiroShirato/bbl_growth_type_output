@@ -69,15 +69,11 @@ function add_all_corrections(){
   // ex2. 関数の指定
 
   // 配列名と値と出現数、属性を出力する関数
-  function get_vals_dict_from_list(set_name, in_values, in_att){
+  function get_vals_dict_from_list(set_name, in_values){
     let out_counts = []; // 出現頻度
     let out_dict = { 
       "name": set_name, // パターン名
       "value": in_values, // 出現結果
-      "attribute": in_att // 属性（左から練習項目、小AP、AP、メンタ嫁、鍛錬）
-      // 例： in_att = [1, false, false, false, 3]
-      // 属性の練習項目は「0:対象外（自主トレなど）, 1:小, 2:大, 3:大マイナス」
-      // 属性の鍛錬は「0:なし(精密鍛錬も含む), 1:積極鍛錬, 2:慎重鍛錬, 3:平衡鍛錬」
     };
 
     // 出現頻度の記録(全て、1を入力)
@@ -86,6 +82,11 @@ function add_all_corrections(){
     out_dict["frequency"] = out_counts;
 
     return out_dict;
+  }
+
+  // パターン名にAPが含まれるか(先頭の "ap_" と、途中の "_ap_" の両方を判定。小APの "map_" は含めない)
+  function has_ap(pattern_name){
+    return pattern_name.startsWith("ap_") || pattern_name.includes("_ap_");
   }
 
   // 経験値加算処理(加算から各配列に追加)
@@ -166,7 +167,7 @@ function add_all_corrections(){
 
   // 積極鍛錬（加算）
   function add_proactive_train_values_v2(in_values, in_freqs, is_large_train_minus){
-    if(is_large_train_minus === true){
+    if(is_large_train_minus){
       // 大練習でのマイナスがある時（引数からフラグ取得）
       return add_ex_value_v2(in_values, in_freqs,proactive_add_values);
     } else {
@@ -177,7 +178,7 @@ function add_all_corrections(){
 
   // 積極鍛錬（減算）
   function sub_proactive_train_values_v2(in_values, in_freqs, is_large_train_minus){
-    if(is_large_train_minus === true){
+    if(is_large_train_minus){
       // 大練習でのマイナスがある時
       return add_ex_value_v2(in_values, in_freqs,proactive_sub_values);
     } else {
@@ -187,7 +188,7 @@ function add_all_corrections(){
 
   // 慎重鍛錬（減算）
   function div_cautious_train_value_v2(in_values, in_freqs, is_large_train_minus){
-    if(is_large_train_minus === true){
+    if(is_large_train_minus){
       // 大練習でのマイナスがある時
       // 処理自体はイマイチやる気が出ない…の半減と同じなので、関数呼び出し
       return div_half_ex_value_v2(in_values, in_freqs);
@@ -233,17 +234,17 @@ function add_all_corrections(){
   // 非AP小練習の値の取得
   const get_small_train_ex = sheet.getRange('G2:J2').getValues();
   let small_train_ex = get_small_train_ex[0].filter(function(x){return typeof x === 'number';});
-  all_pattern_ex.push(get_vals_dict_from_list("small_train_ex", small_train_ex, [1, false, false, false, 0]));
+  all_pattern_ex.push(get_vals_dict_from_list("small_train_ex", small_train_ex));
 
   // 非AP大練習の値の取得
   const get_large_train_ex = sheet.getRange('G3:J3').getValues();
   let large_train_ex = get_large_train_ex[0].filter(function(x){return typeof x === 'number';});
-  all_pattern_ex.push(get_vals_dict_from_list("large_train_ex", large_train_ex, [2, false, false, false, 0]));
+  all_pattern_ex.push(get_vals_dict_from_list("large_train_ex", large_train_ex));
 
   // 大練習のマイナス値の取得
   const get_large_minus_ex = sheet.getRange('G4:J4').getValues();
   const large_minus_ex = get_large_minus_ex[0].filter(function(x){return typeof x === 'number';});
-  all_pattern_ex.push(get_vals_dict_from_list("large_minus_ex", large_minus_ex, [3, false, false, false, 0]));
+  all_pattern_ex.push(get_vals_dict_from_list("large_minus_ex", large_minus_ex));
 
   // 小APのフラグの取得
   const which_mini_ap = sheet.getRange('C13').getValue();
@@ -270,7 +271,7 @@ function add_all_corrections(){
   const min_pit_ex = Math.min(...small_train_ex) * 3;
   const max_pit_ex = Math.max(...small_train_ex) * 3;
   const participate_independent_training_ex = Array.from({ length: (max_pit_ex - min_pit_ex + 1) }, (_, i) => i + min_pit_ex);
-  all_pattern_ex.push(get_vals_dict_from_list("participate_independent_training_ex", participate_independent_training_ex, [0, false, false, false, 0]));
+  all_pattern_ex.push(get_vals_dict_from_list("participate_independent_training_ex", participate_independent_training_ex));
 
   // 大練習で下がるか、のフラグ
   let is_large_train_minus = false;
@@ -299,12 +300,10 @@ function add_all_corrections(){
     // 積極鍛錬と精密鍛錬は、小練習と新球大練習は別に補正がかかるので分離する必要あり
     if(which_train_ability === "積極鍛錬" || which_train_ability === "精密鍛錬"){
       for(const a_ex of all_pattern_ex){
-        let temp_attribute = [...a_ex["attribute"]];
-        if(temp_attribute[0] === 1){
-          let temp_name = a_ex["name"].replace('small', 'new_ball');
-          temp_attribute[0] = 2;
+        if(a_ex["name"].includes("small_train_ex")){
+          let temp_name = a_ex["name"].replace('small', 'new_ball_large');
           // 直接パターンを入れる（次の小AP追加の処理の対象にするため）
-          all_pattern_ex.push(get_vals_dict_from_list(temp_name, a_ex["value"], temp_attribute));
+          all_pattern_ex.push(get_vals_dict_from_list(temp_name, a_ex["value"]));
           break; // 1回きり！
         }
       }
@@ -314,16 +313,14 @@ function add_all_corrections(){
     }
 
     for(const a_ex of all_pattern_ex){
-      let temp_attribute = [...a_ex["attribute"]];
-      if(temp_attribute[0] === 1 || temp_attribute[0] === 2){
-        if(temp_attribute[0] === 2 && which_main_ap === "変化" && is_ap_and_map_same === true){
+      if(a_ex["name"].includes("_train_ex")){
+        if(a_ex["name"].includes("large_train") && which_main_ap === "変化" && is_ap_and_map_same){
           // 変化APで小APも変化の場合、変化の大練習は存在しないので除外
           continue;
         } else {
           const temp_name = "map_" + a_ex["name"];
-          temp_attribute[1] = true;
           const temp_values = a_ex["value"].map(num => num + mini_ap_add_val);
-          temp_dict_list.push(get_vals_dict_from_list(temp_name, temp_values, temp_attribute));
+          temp_dict_list.push(get_vals_dict_from_list(temp_name, temp_values));
         }
       }
     }
@@ -345,29 +342,25 @@ function add_all_corrections(){
   temp_dict_list = [];
 
   for(let a_ex of all_pattern_ex){
-    let temp_attribute = [...a_ex["attribute"]];
-    if(temp_attribute[0] === 1 || temp_attribute[0] === 2){
-      if(a_ex["name"] === "new_ball_train_ex"){
+    if(a_ex["name"].includes("_train_ex")){
+      if(a_ex["name"] === "new_ball_large_train_ex"){
         // 新球大練習は除外
         continue;
       }
-      if(is_ap_and_map_same === true && temp_attribute[1] === true){
+      if(is_ap_and_map_same && a_ex["name"].includes("map_")){
         // APと小APが同じになった時、小APのパターンをAP＋小APのパターンに変更する
-        temp_attribute[2] = true;
         a_ex["name"] ="ap_" + a_ex["name"];
-        a_ex["attribute"] = temp_attribute;
         a_ex["value"] = a_ex["value"].map(num => Math.floor(num * Math.round(ap_mul * 10) / 10));
-      } else if(temp_attribute[0] != 2 || which_main_ap !== "変化"){
+      } else if(!a_ex["name"].includes("large_train") || which_main_ap !== "変化"){
         // それ以外は追加
         const temp_name = "ap_" + a_ex["name"];
-        temp_attribute[2] = true;
         const temp_values = a_ex["value"].map(num => Math.floor(num * Math.round(ap_mul * 10) / 10));
-        if(which_mini_ap ==="あり（APとは別）" && temp_attribute[1] === true){
+        if(which_mini_ap ==="あり（APとは別）" && a_ex["name"].includes("map_")){
           continue;
-        } else if(which_mini_ap === "あり（APと同じ）" && temp_attribute[1] != true){
+        } else if(which_mini_ap === "あり（APと同じ）" && !a_ex["name"].includes("map_")){
           continue;
         }
-        temp_dict_list.push(get_vals_dict_from_list(temp_name, temp_values, temp_attribute));
+        temp_dict_list.push(get_vals_dict_from_list(temp_name, temp_values));
       }
     }
   }
@@ -378,7 +371,7 @@ function add_all_corrections(){
   // 3. YURによる経験値追加処理
   if(is_yur_add === "あり"){
     for(let a_ex of all_pattern_ex){
-      if(a_ex["attribute"][0] === 1 || a_ex["attribute"][0] === 2){
+      if(a_ex["name"].includes("_train_ex")){
         a_ex["value"] = a_ex["value"].map(num => num + yur_add_val);
       }
     }
@@ -389,30 +382,26 @@ function add_all_corrections(){
     temp_dict_list = [];
 
     for(let a_ex of all_pattern_ex){
-      let temp_attribute = [...a_ex["attribute"]];
       let is_added_new_pattern = false;
       let is_overwrited_current_pattern = false;
       // 大練習と小練習を対象
-      if(temp_attribute[0] === 1 || temp_attribute[0] === 2){
-        if(which_main_ap === "精神" && temp_attribute[2] === true){
+      if(a_ex["name"].includes("_train_ex")){
+        if(which_main_ap === "精神" && has_ap(a_ex["name"])){
           // APが精神なら、APを対象とする(上書き処理)
           is_overwrited_current_pattern = true;
-        } else if(which_main_ap !== "精神" && temp_attribute[2] === false){
+        } else if(which_main_ap !== "精神" && !has_ap(a_ex["name"])){
           // APが精神以外なら、APを対象としない(追加処理)
           is_added_new_pattern = true;
         }
       }
-      if(is_added_new_pattern === true){
+      if(is_added_new_pattern){
         // 更新対象の項目なら
         let temp_name = "mental_" + a_ex["name"];
-        temp_attribute[3] = true;
         const temp_values = a_ex["value"].map(num => num * mental_mul);
-        temp_dict_list.push(get_vals_dict_from_list(temp_name, temp_values, temp_attribute));
-      } else if(is_overwrited_current_pattern === true){
+        temp_dict_list.push(get_vals_dict_from_list(temp_name, temp_values));
+      } else if(is_overwrited_current_pattern){
         // 既存のAPの記録を上書きする形で、メンタ嫁APに置き換える
-        temp_attribute[3] = true;
         a_ex["name"] ="mental_" + a_ex["name"];
-        a_ex["attribute"] = temp_attribute;
         a_ex["value"] = a_ex["value"].map(num => num * mental_mul);
       }
     }
@@ -426,7 +415,7 @@ function add_all_corrections(){
   if(which_concentrate === "集中"){
 
     for(let a_ex of all_pattern_ex){
-      if(a_ex["attribute"][0] === 1 || a_ex["attribute"][0] === 2){
+      if(a_ex["name"].includes("_train_ex")){
         const temp_result = add_concentrate_ex_value_v2(a_ex["value"], a_ex["frequency"]);
         a_ex["value"] = temp_result[0];
         a_ex["frequency"] = temp_result[1];
@@ -436,7 +425,7 @@ function add_all_corrections(){
   } else if(which_concentrate === "イマイチ"){
 
     for(let a_ex of all_pattern_ex){
-      if(a_ex["attribute"][0] === 1 || a_ex["attribute"][0] === 2){
+      if(a_ex["name"].includes("_train_ex")){
         const temp_result = div_half_ex_value_v2(a_ex["value"], a_ex["frequency"]);
         a_ex["value"] = temp_result[0];
         a_ex["frequency"] = temp_result[1];
@@ -472,57 +461,51 @@ function add_all_corrections(){
     temp_dict_list = [];
 
     for(let a_ex of all_pattern_ex){
-      let temp_attribute = [...a_ex["attribute"]];
       let is_proactive_exec = false;
       let temp_result = [];
-      if(temp_attribute[0] === 1 || temp_attribute[0] === 2 || temp_attribute[0] === 3){
-        if(temp_attribute[0] === 1 && is_created_new_ball === false){
-           if(temp_attribute[2] === false && temp_attribute[3] === false){
-            // 新球大練習（AP除外、メンタ嫁除外）の時の対応（新球大練習がまだ未作成の場合）
-            // 加算値の計算
-            temp_result = add_proactive_train_values_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
-            is_proactive_exec = true;
-          }
-        } else if(temp_attribute[0] === 2){
+      if(a_ex["name"] !== "participate_independent_training_ex"){
+        if(!is_created_new_ball && a_ex["name"].includes("small_train") && !has_ap(a_ex["name"]) && !a_ex["name"].includes("mental_")){
+          // 新球大練習（AP除外）の時の対応（新球大練習がまだ未作成の場合、メンタ嫁除外）
+          // 加算値の計算
+          temp_result = add_proactive_train_values_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
+          is_proactive_exec = true;
+        } else if(a_ex["name"].includes("large_train")){
           // APが積極鍛錬の対象、または非APなら加算値の計算を行う
-          if(is_proactive_ap === true || temp_attribute[2] === false){
+          if(is_proactive_ap || !has_ap(a_ex["name"])){
             // メンタ嫁除外
-            if(temp_attribute[3] === false){
+            if(!a_ex["name"].includes("mental_")){
               // 加算値の計算
               temp_result = add_proactive_train_values_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
               is_proactive_exec = true;
             }
           }
-        } else if(temp_attribute[0] === 3){
+        } else if(a_ex["name"].includes("large_minus")){
           // 減少値の計算
           temp_result = sub_proactive_train_values_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
           is_proactive_exec = true;
         }
-        if(is_proactive_exec === true){
+        if(is_proactive_exec){
           let temp_name = "proactive_" + a_ex["name"];
-          if(temp_attribute[0] === 1){
+          if(a_ex["name"].includes("small_train")){
             // 新球大練習なら名前を変更
-            temp_name = temp_name.replace('small', 'new_ball');
+            temp_name = temp_name.replace('small', 'new_ball_large');
           }
-          temp_attribute[4] = 1;
-          if((is_proactive_ap === true && temp_attribute[2] === true) || 
-             a_ex["name"] === "new_ball_train_ex" ||
-             a_ex["name"] === "map_new_ball_train_ex" ){
+          if((is_proactive_ap && has_ap(a_ex["name"])) || 
+             a_ex["name"] === "new_ball_large_train_ex" ||
+             a_ex["name"] === "map_new_ball_large_train_ex" ){
             // もしAPが積極鍛錬の対象、または新球大練習の場合は唯一なので、値を置き換える
             a_ex["name"] = temp_name;
             a_ex["value"] = temp_result[0];
-            a_ex["attribute"] = temp_attribute;
             a_ex["frequency"] = temp_result[1];
           } else {
             // それ以外は値を追加
             let out_dict = { 
               "name": temp_name, 
               "value": temp_result[0], 
-              "attribute": temp_attribute,
               "frequency": temp_result[1]
             };
             temp_dict_list.push(out_dict);
-            if(temp_attribute[0] === 1){
+            if(a_ex["name"].includes("small_train")){
               // 新球大練習の追加の場合、小練習の項目の名前を変えるフラグを建てる
               is_created_new_ball = true;
             }
@@ -538,15 +521,12 @@ function add_all_corrections(){
     // 慎重大練習時のマイナス経験値
 
     for(let a_ex of all_pattern_ex){
-      let temp_attribute = [...a_ex["attribute"]];
       let temp_result = [];
-      if(temp_attribute[0] === 3){
+      if(a_ex["name"].includes("large_minus")){
         // 減少値の計算
         temp_result = div_cautious_train_value_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
-        temp_attribute[4] = 2;
         // 既存の減少の記録を上書きする形で、置き換え
         a_ex["name"] ="cautious_" + a_ex["name"];
-        a_ex["attribute"] = temp_attribute;
         a_ex["value"] = temp_result[0];
         a_ex["frequency"] = temp_result[1];
       }   
@@ -557,17 +537,14 @@ function add_all_corrections(){
     temp_dict_list = [];
 
     for(let a_ex of all_pattern_ex){
-      if(a_ex["attribute"][0] === 1){
+      if(a_ex["name"].includes("small_train")){
         // 以下、新球大練習用の退避処理（退避処理がまだなら、ここで対応）、念のためAPは除外
-        if(is_created_new_ball === false && a_ex["attribute"][2] === false){
+        if(!is_created_new_ball && !has_ap(a_ex["name"])){
           // 以下、新球大練習用の退避処理
-          const temp_name = a_ex["name"].replace('small', 'new_ball');
-          let temp_attribute = [...a_ex["attribute"]]; // ← スプレッドでコピー（下記の副次的な問題の対策も兼ねる）
-          temp_attribute[0] = 2;
+          const temp_name = a_ex["name"].replace('small', 'new_ball_large');
           temp_dict_list.push({
             "name": temp_name, 
             "value": [...a_ex["value"]], 
-            "attribute": temp_attribute,
             "frequency": [...a_ex["frequency"]]
           });
 
@@ -590,16 +567,14 @@ function add_all_corrections(){
 
     // 全パターンを平衡鍛錬に適用
     for(const a_ex of all_pattern_ex){
-      let temp_attribute = [...a_ex["attribute"]];
       let temp_result = [];
-      if(temp_attribute[0] === 1 || temp_attribute[0] === 2){
+      
+      if(a_ex["name"].includes("_train_ex")){
         temp_result = add_equilibrium_train_values_v3(a_ex["value"], a_ex["frequency"]);
         const temp_name = "equilibrium_" + a_ex["name"];
-        temp_attribute[4] = 3;
         temp_dict_list.push({ 
           "name": temp_name, 
           "value": temp_result[0], 
-          "attribute": temp_attribute,
           "frequency": temp_result[1]
         });
       }
@@ -612,7 +587,7 @@ function add_all_corrections(){
   // 7. 筋肉養成ギプスの適用
   if(is_cast_mul === "あり"){
     for(let a_ex of all_pattern_ex){
-      if(a_ex["attribute"][0] === 1 || a_ex["attribute"][0] === 2){
+      if(a_ex["name"].includes("_train_ex")){
         a_ex["value"] = a_ex["value"].map(num => Math.ceil(num * Math.round(cast_mul * 10) / 10));
       }
     }
@@ -641,7 +616,7 @@ function add_all_corrections(){
     a_ex["expected_value"] = Math.round(count_vals_mul_freq / count_freqs * 100) / 100;
 
     // 出現値のソート（ここで頻度と並びがずれるので、出現値と総和を事前に退避する必要がある）
-    if(a_ex["attribute"][0] === 3){
+    if(a_ex["name"].includes("large_minus")){
       // 大練習の減少のみ、降順
       a_ex["value"] = a_ex["value"].sort((a,b) => (a > b ? -1 : 1));
     } else {
@@ -671,7 +646,7 @@ function add_all_corrections(){
   // パターンの種類の名前一覧
   const output_names = [
    ["small_train_ex", "小練習、新球大練習"],
-   ["new_ball_train_ex", "新球大練習"],
+   ["new_ball_large_train_ex", "新球大練習"],
    ["ap_small_train_ex", "AP小練習"],
    ["mental_small_train_ex", "メンタ精神小練習"],
    ["mental_ap_small_train_ex", "精神APメンタ精神小練習"],
@@ -680,7 +655,7 @@ function add_all_corrections(){
    ["equilibrium_mental_small_train_ex", "メンタ平衡精神小練習"],
    ["equilibrium_mental_ap_small_train_ex", "精神APメンタ平衡精神小練習"],
    ["map_small_train_ex", "小AP小練習、小AP新球大練習"],
-   ["map_new_ball_train_ex", "小AP新球大練習"],
+   ["map_new_ball_large_train_ex", "小AP新球大練習"],
    ["ap_map_small_train_ex", "小AP＋AP小練習"],
    ["mental_map_small_train_ex", "小APメンタ精神小練習"],
    ["mental_ap_map_small_train_ex", "小AP＋精神APメンタ精神小練習"],
@@ -692,7 +667,7 @@ function add_all_corrections(){
    ["ap_large_train_ex", "AP大練習"],
    ["mental_large_train_ex", "メンタ精神大練習"],
    ["mental_ap_large_train_ex", "精神APメンタ精神大練習"],
-   ["proactive_new_ball_train_ex", "積極新球大練習"],
+   ["proactive_new_ball_large_train_ex", "積極新球大練習"],
    ["proactive_large_train_ex", "積極大練習"],
    ["proactive_ap_large_train_ex", "AP積極大練習"],
    ["equilibrium_large_train_ex", "平衡大練習"],
@@ -703,7 +678,7 @@ function add_all_corrections(){
    ["ap_map_large_train_ex", "小AP＋AP大練習"],
    ["mental_map_large_train_ex", "小APメンタ精神大練習"],
    ["mental_ap_map_large_train_ex", "小AP＋精神APメンタ精神大練習"],
-   ["proactive_map_new_ball_train_ex", "小AP積極新球大練習"],
+   ["proactive_map_new_ball_large_train_ex", "小AP積極新球大練習"],
    ["proactive_map_large_train_ex", "小AP積極大練習"],
    ["proactive_ap_map_large_train_ex", "小AP＋AP積極大練習"],
    ["equilibrium_map_large_train_ex", "小AP平衡大練習"],
@@ -717,7 +692,7 @@ function add_all_corrections(){
   ];
 
   // 新球大練習を小練習から分けた時の、種類の表示名の変更
-  if(is_created_new_ball === true){
+  if(is_created_new_ball){
     for(const a_point in output_names){
       if(output_names[a_point][0] === "small_train_ex"){
         output_names[a_point][1] = "小練習";
