@@ -1,3 +1,5 @@
+// @ts-check
+
 // 再計算のきっかけにする入力欄(「フォーム」シートのC列)
 const input_sheet_name = "フォーム";
 const input_column = 3; // C列
@@ -90,7 +92,7 @@ function add_all_corrections(){
   }
 
   // 経験値加算処理(加算から各配列に追加)
-  function add_ex_value_v2(in_values, in_freqs, add_values){
+  function add_ex_value(in_values, in_freqs, add_values){
     // 計算結果の格納
     let calculated_values = [];
     let out_freqs = [];
@@ -113,7 +115,7 @@ function add_all_corrections(){
   }
 
   // 経験値半減処理（切り捨てと切り上げが半々の確率で出現）  
-  function div_half_ex_value_v2(in_values, in_freq){
+  function div_half_ex_value(in_values, in_freq){
     // 半減（切り捨て）
     const floored_values = in_values.map(num => Math.floor(num / 2));
     // 半減（切り上げ）
@@ -141,8 +143,8 @@ function add_all_corrections(){
   }
 
   // 集中実行時による経験値の加算    
-  function add_concentrate_ex_value_v2(in_values, in_freqs){
-    return add_ex_value_v2(in_values, in_freqs, concentrate_add_values);
+  function add_concentrate_ex_value(in_values, in_freqs){
+    return add_ex_value(in_values, in_freqs, concentrate_add_values);
   }
 
   // 精密鍛錬（加算）
@@ -166,10 +168,10 @@ function add_all_corrections(){
   }
 
   // 積極鍛錬（加算）
-  function add_proactive_train_values_v2(in_values, in_freqs, is_large_train_minus){
+  function add_proactive_train_values(in_values, in_freqs, is_large_train_minus){
     if(is_large_train_minus){
       // 大練習でのマイナスがある時（引数からフラグ取得）
-      return add_ex_value_v2(in_values, in_freqs,proactive_add_values);
+      return add_ex_value(in_values, in_freqs, proactive_add_values);
     } else {
       return [in_values, in_freqs];
     }
@@ -177,28 +179,28 @@ function add_all_corrections(){
 
 
   // 積極鍛錬（減算）
-  function sub_proactive_train_values_v2(in_values, in_freqs, is_large_train_minus){
+  function sub_proactive_train_values(in_values, in_freqs, is_large_train_minus){
     if(is_large_train_minus){
       // 大練習でのマイナスがある時
-      return add_ex_value_v2(in_values, in_freqs,proactive_sub_values);
+      return add_ex_value(in_values, in_freqs, proactive_sub_values);
     } else {
       return [in_values, in_freqs];
     }
   }
 
   // 慎重鍛錬（減算）
-  function div_cautious_train_value_v2(in_values, in_freqs, is_large_train_minus){
+  function div_cautious_train_value(in_values, in_freqs, is_large_train_minus){
     if(is_large_train_minus){
       // 大練習でのマイナスがある時
       // 処理自体はイマイチやる気が出ない…の半減と同じなので、関数呼び出し
-      return div_half_ex_value_v2(in_values, in_freqs);
+      return div_half_ex_value(in_values, in_freqs);
     } else {
       return [in_values, in_freqs];
     }
   }
 
   // 平衡鍛錬（加算）
-  function add_equilibrium_train_values_v3(in_values, in_freqs){
+  function add_equilibrium_train_values(in_values, in_freqs){
     if(Math.max(...in_values) > 0){
       // 計算結果の格納
       let calculated_values = [];
@@ -313,6 +315,7 @@ function add_all_corrections(){
     }
 
     for(const a_ex of all_pattern_ex){
+      // 小練習か大練習が対象
       if(a_ex["name"].includes("_train_ex")){
         if(a_ex["name"].includes("large_train") && which_main_ap === "変化" && is_ap_and_map_same){
           // 変化APで小APも変化の場合、変化の大練習は存在しないので除外
@@ -342,9 +345,10 @@ function add_all_corrections(){
   temp_dict_list = [];
 
   for(let a_ex of all_pattern_ex){
+    // 小練習か大練習が対象
     if(a_ex["name"].includes("_train_ex")){
-      if(a_ex["name"] === "new_ball_large_train_ex"){
-        // 新球大練習は除外
+      if(a_ex["name"].includes("new_ball_large_train_ex") && !a_ex["name"].startsWith("map_")){
+        // 新球大練習は除外(小AP新球大練習はそのまま続ける)
         continue;
       }
       if(is_ap_and_map_same && a_ex["name"].includes("map_")){
@@ -371,6 +375,7 @@ function add_all_corrections(){
   // 3. YURによる経験値追加処理
   if(is_yur_add === "あり"){
     for(let a_ex of all_pattern_ex){
+      // 小練習か大練習が対象
       if(a_ex["name"].includes("_train_ex")){
         a_ex["value"] = a_ex["value"].map(num => num + yur_add_val);
       }
@@ -380,11 +385,12 @@ function add_all_corrections(){
   // 4. メンタリスト能力持ちの嫁追加処理
   if(is_mental_wife_mul === "あり"){
     temp_dict_list = [];
-
     for(let a_ex of all_pattern_ex){
+      // 新たに追加するか
       let is_added_new_pattern = false;
+      // 既存のパターンを上書きするか
       let is_overwrited_current_pattern = false;
-      // 大練習と小練習を対象
+      // 大練習と小練習が対象
       if(a_ex["name"].includes("_train_ex")){
         if(which_main_ap === "精神" && has_ap(a_ex["name"])){
           // APが精神なら、APを対象とする(上書き処理)
@@ -393,16 +399,16 @@ function add_all_corrections(){
           // APが精神以外なら、APを対象としない(追加処理)
           is_added_new_pattern = true;
         }
-      }
-      if(is_added_new_pattern){
-        // 更新対象の項目なら
-        let temp_name = "mental_" + a_ex["name"];
-        const temp_values = a_ex["value"].map(num => num * mental_mul);
-        temp_dict_list.push(get_vals_dict_from_list(temp_name, temp_values));
-      } else if(is_overwrited_current_pattern){
-        // 既存のAPの記録を上書きする形で、メンタ嫁APに置き換える
-        a_ex["name"] ="mental_" + a_ex["name"];
-        a_ex["value"] = a_ex["value"].map(num => num * mental_mul);
+        if(is_added_new_pattern){
+          // 更新対象の項目なら
+          let temp_name = "mental_" + a_ex["name"];
+          const temp_values = a_ex["value"].map(num => num * mental_mul);
+          temp_dict_list.push(get_vals_dict_from_list(temp_name, temp_values));
+        } else if(is_overwrited_current_pattern){
+          // 既存のAPの記録を上書きする形で、メンタ嫁APに置き換える
+          a_ex["name"] ="mental_" + a_ex["name"];
+          a_ex["value"] = a_ex["value"].map(num => num * mental_mul);
+        }
       }
     }
     for(const a_dict of temp_dict_list){
@@ -415,8 +421,9 @@ function add_all_corrections(){
   if(which_concentrate === "集中"){
 
     for(let a_ex of all_pattern_ex){
+      // 小練習か大練習が対象
       if(a_ex["name"].includes("_train_ex")){
-        const temp_result = add_concentrate_ex_value_v2(a_ex["value"], a_ex["frequency"]);
+        const temp_result = add_concentrate_ex_value(a_ex["value"], a_ex["frequency"]);
         a_ex["value"] = temp_result[0];
         a_ex["frequency"] = temp_result[1];
       }
@@ -425,8 +432,9 @@ function add_all_corrections(){
   } else if(which_concentrate === "イマイチ"){
 
     for(let a_ex of all_pattern_ex){
+      // 小練習か大練習が対象
       if(a_ex["name"].includes("_train_ex")){
-        const temp_result = div_half_ex_value_v2(a_ex["value"], a_ex["frequency"]);
+        const temp_result = div_half_ex_value(a_ex["value"], a_ex["frequency"]);
         a_ex["value"] = temp_result[0];
         a_ex["frequency"] = temp_result[1];
       }
@@ -464,24 +472,30 @@ function add_all_corrections(){
       let is_proactive_exec = false;
       let temp_result = [];
       if(a_ex["name"] !== "participate_independent_training_ex"){
-        if(!is_created_new_ball && a_ex["name"].includes("small_train") && !has_ap(a_ex["name"]) && !a_ex["name"].includes("mental_")){
-          // 新球大練習（AP除外）の時の対応（新球大練習がまだ未作成の場合、メンタ嫁除外）
-          // 加算値の計算
-          temp_result = add_proactive_train_values_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
-          is_proactive_exec = true;
+        // 新球大練習（念のため、AP除外）の時の対応（小練習の値をもとに作成）
+        if(a_ex["name"].includes("small_train")){
+          // 新球大練習がまだ未作成の場合（念のため、AP除外）
+          if(!is_created_new_ball && !has_ap(a_ex["name"])){
+            // メンタ嫁除外
+            if(!a_ex["name"].includes("mental_")){
+              // 加算値の計算
+              temp_result = add_proactive_train_values(a_ex["value"], a_ex["frequency"], is_large_train_minus);
+              is_proactive_exec = true;
+            }
+          }
         } else if(a_ex["name"].includes("large_train")){
           // APが積極鍛錬の対象、または非APなら加算値の計算を行う
           if(is_proactive_ap || !has_ap(a_ex["name"])){
             // メンタ嫁除外
             if(!a_ex["name"].includes("mental_")){
               // 加算値の計算
-              temp_result = add_proactive_train_values_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
+              temp_result = add_proactive_train_values(a_ex["value"], a_ex["frequency"], is_large_train_minus);
               is_proactive_exec = true;
             }
           }
         } else if(a_ex["name"].includes("large_minus")){
           // 減少値の計算
-          temp_result = sub_proactive_train_values_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
+          temp_result = sub_proactive_train_values(a_ex["value"], a_ex["frequency"], is_large_train_minus);
           is_proactive_exec = true;
         }
         if(is_proactive_exec){
@@ -490,9 +504,7 @@ function add_all_corrections(){
             // 新球大練習なら名前を変更
             temp_name = temp_name.replace('small', 'new_ball_large');
           }
-          if((is_proactive_ap && has_ap(a_ex["name"])) || 
-             a_ex["name"] === "new_ball_large_train_ex" ||
-             a_ex["name"] === "map_new_ball_large_train_ex" ){
+          if((is_proactive_ap && has_ap(a_ex["name"])) || a_ex["name"].includes("new_ball_large_train_ex")){
             // もしAPが積極鍛錬の対象、または新球大練習の場合は唯一なので、値を置き換える
             a_ex["name"] = temp_name;
             a_ex["value"] = temp_result[0];
@@ -524,7 +536,7 @@ function add_all_corrections(){
       let temp_result = [];
       if(a_ex["name"].includes("large_minus")){
         // 減少値の計算
-        temp_result = div_cautious_train_value_v2(a_ex["value"], a_ex["frequency"], is_large_train_minus);
+        temp_result = div_cautious_train_value(a_ex["value"], a_ex["frequency"], is_large_train_minus);
         // 既存の減少の記録を上書きする形で、置き換え
         a_ex["name"] ="cautious_" + a_ex["name"];
         a_ex["value"] = temp_result[0];
@@ -568,9 +580,9 @@ function add_all_corrections(){
     // 全パターンを平衡鍛錬に適用
     for(const a_ex of all_pattern_ex){
       let temp_result = [];
-      
+      // 小練習か大練習が対象
       if(a_ex["name"].includes("_train_ex")){
-        temp_result = add_equilibrium_train_values_v3(a_ex["value"], a_ex["frequency"]);
+        temp_result = add_equilibrium_train_values(a_ex["value"], a_ex["frequency"]);
         const temp_name = "equilibrium_" + a_ex["name"];
         temp_dict_list.push({ 
           "name": temp_name, 
@@ -587,6 +599,7 @@ function add_all_corrections(){
   // 7. 筋肉養成ギプスの適用
   if(is_cast_mul === "あり"){
     for(let a_ex of all_pattern_ex){
+      // 小練習か大練習が対象
       if(a_ex["name"].includes("_train_ex")){
         a_ex["value"] = a_ex["value"].map(num => Math.ceil(num * Math.round(cast_mul * 10) / 10));
       }
