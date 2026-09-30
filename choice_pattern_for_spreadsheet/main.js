@@ -657,7 +657,7 @@ function add_all_corrections(){
   // 9.スプレッドシートへの出力
 
   // パターンの種類の名前一覧
-  const output_names = [
+  let output_names = [
    ["small_train_ex", "小練習、新球大練習"],
    ["new_ball_large_train_ex", "新球大練習"],
    ["ap_small_train_ex", "AP小練習"],
@@ -704,20 +704,31 @@ function add_all_corrections(){
    ["participate_independent_training_ex", "自主トレ参加"]
   ];
 
-  // 新球大練習を小練習から分けた時の、種類の表示名の変更
-  if(is_created_new_ball){
-    for(const a_point in output_names){
-      if(output_names[a_point][0] === "small_train_ex"){
+  for(const a_point in output_names){
+    // 新球大練習を小練習から分けた時、種類の表示名の変更
+    const now_name_list = output_names[a_point];
+    if(is_created_new_ball){
+      if(now_name_list[0] === "small_train_ex"){
         output_names[a_point][1] = "小練習";
-      } else if(output_names[a_point][0] === "map_small_train_ex"){
+      } else if(now_name_list[0] === "map_small_train_ex"){
         output_names[a_point][1] = "小AP小練習";
+      }
+    }
+    // 精密鍛錬が有効な時、小練習の表示名の変更
+    if(which_train_ability === "精密鍛錬"){
+      if(now_name_list[0].includes("small_train_ex")){
+        if(now_name_list[0].includes("mental_")){
+          output_names[a_point][1] = now_name_list[1].replace("精神小練習", "精密精神小練習");
+        } else {
+          output_names[a_point][1] = now_name_list[1].replace("小練習", "精密小練習");
+        }
       }
     }
   }
 
   // 出力欄全体を空欄で埋めた配列を用意する(書き込まなかったセルは空欄になるので、前回の結果の消去も兼ねる)
-  const name_rows = Array.from({ length: output_row_count }, () => [""]); // E列
-  const value_rows = Array.from({ length: output_row_count }, () => Array(value_col_count + 1).fill("")); // G～V列
+  let name_rows = Array.from({ length: output_row_count }, () => [""]); // E列
+  let value_rows = Array.from({ length: output_row_count }, () => Array(value_col_count + 1).fill("")); // G～V列
 
   // 条件に合致する内容を配列に書き込む
   let row_index = 0;
