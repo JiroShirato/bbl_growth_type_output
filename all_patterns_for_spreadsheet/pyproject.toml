@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "BBLの成長期別経験値をExcelに出力"
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
 requires-python = ">=3.14"
 dependencies = [
     "openpyxl>=3.1.5",

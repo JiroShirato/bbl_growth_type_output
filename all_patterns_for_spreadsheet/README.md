@@ -273,4 +273,4 @@ pycodestyleは `pyproject.toml` の設定を読まないため、行の上限と
 
 ## ライセンス
 
-[MIT License](./LICENSE) で公開しています。
+[MIT License](../LICENSE) で公開しています。

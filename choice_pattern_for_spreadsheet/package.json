@@ -1,0 +1,26 @@
+{
+  "name": "bbl-choice-pattern-for-spreadsheet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BBLの成長期と補正条件を選び、出現する経験値の範囲・確率・期待値をGoogleスプレッドシートに表示するGoogle Apps Script",
+  "license": "MIT",
+  "scripts": {
+    "login": "clasp login",
+    "status": "clasp show-file-status",
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open-script"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JiroShirato/bbl_growth_type_output.git",
+    "directory": "choice_pattern_for_spreadsheet"
+  },
+  "bugs": {
+    "url": "https://github.com/JiroShirato/bbl_growth_type_output/issues"
+  },
+  "homepage": "https://github.com/JiroShirato/bbl_growth_type_output/tree/main/choice_pattern_for_spreadsheet#readme",
+  "devDependencies": {
+    "@google/clasp": "^3.4.1"
+  }
+}

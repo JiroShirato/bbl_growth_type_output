@@ -18,3 +18,9 @@ wheels/
 
 # base spreadsheet file
 !all_patterns_for_spreadsheet/base_spreadsheet.xlsx
+!choice_pattern_for_spreadsheet/base_spreadsheet.xlsx
+
+# Node.js / clasp
+node_modules/
+.clasprc.json
+.clasp.json
