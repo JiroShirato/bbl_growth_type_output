@@ -2,7 +2,7 @@
 
 野球系Webゲーム「[Baseball Life(以下、BBL)](https://baseball-life.games/)」で、成長期と補正条件を選ぶと、練習で出現する経験値の範囲・確率・期待値をGoogleスプレッドシートに表示するGoogle Apps Script(GAS)です。
 
-成長型と年齢、または成長期を直接選び、小AP・AP・YUR・メンタリスト嫁・集中／イマイチ・鍛錬・筋肉養成ギプスの条件を指定すると、該当する練習の結果だけを一覧で表示します。すべての条件の組み合わせをまとめて出力したい場合は、[all_patterns_for_spreadsheet/](../all_patterns_for_spreadsheet/) を使ってください。
+成長型と年齢、または成長期を直接選び、小AP・AP・YUR・メンタリスト嫁・集中／イマイチ・鍛錬・筋肉養成ギプスの条件を指定すると、該当する練習の結果だけを一覧で表示します。手元ですべての条件の組み合わせをまとめて出力したい場合は、[all_patterns_for_spreadsheet/](../all_patterns_for_spreadsheet/) を使ってください。
 
 この文書は、BBLの2026年9月29日現在の実装(Ver. 0.4.3.6)を元に説明しています。ゲームの最新仕様との一致を保証するものではありません。
 
@@ -55,7 +55,7 @@ npm run push     # スクリプトをアップロード
 
 ## 使い方
 
-「フォーム」シートのC列で条件を選ぶと、編集のたびにスクリプト(`onEdit`)が実行され、結果がE～V列に表示されます。
+「フォーム」シートのC列で条件を選ぶと、スクリプト(`onEdit`)が実行され、結果がE～V列に表示されます。スクリプトが実行されるのは、下の表の入力欄(C7～C10、C13～C19)を編集したときだけです。
 
 | セル | 項目 | 選択肢 |
 |---|---|---|
@@ -78,7 +78,16 @@ npm run push     # スクリプトをアップロード
 - 1行目: E列に練習の種類、G列から出現する経験値、V列に期待値
 - 2行目: 1行目の各経験値が出現する確率
 
-成長期ごとの経験値の範囲は「期PT」シート、成長型と年齢から成長期を決める表は「型PT」シートにあります。ゲームの仕様が変わった場合は、これらのシートを更新してください。
+成長期ごとの経験値の範囲は「期PT」シート、成長型と年齢から成長期を決める表は「型PT」シートにあります。ゲームの仕様が変わった場合は、これらのシートを更新してください。これらのシートを編集しても結果は自動で更新されないので、編集後に「フォーム」シートの入力欄をいずれか選び直してください。
+
+## コードスタイル
+
+[main.js](./main.js) は、文末にセミコロン(`;`)を付ける書き方に統一しています。[ESLint](https://eslint.org/) で確認・修正できます。
+
+```sh
+npm run lint       # セミコロンの抜けを確認(何も表示されなければOK)
+npm run lint:fix   # セミコロンの抜けを自動で修正
+```
 
 ## ファイル構成
 
@@ -89,7 +98,12 @@ npm run push     # スクリプトをアップロード
 | [base_spreadsheet.xlsx](./base_spreadsheet.xlsx) | スプレッドシートのテンプレート(「フォーム」「型PT」「期PT」の3シート) |
 | [.clasp.json.sample](./.clasp.json.sample) | clasp の設定のひな形。コピーして `.clasp.json` を作り、アップロード先のスクリプトIDを設定する |
 | [.claspignore](./.claspignore) | clasp でアップロードしないファイルの指定 |
-| [package.json](./package.json) | clasp のバージョンと、`npm run` で使うコマンドの定義 |
+| [package.json](./package.json) | clasp と ESLint のバージョンと、`npm run` で使うコマンドの定義 |
+| [eslint.config.mjs](./eslint.config.mjs) | ESLint の設定(文末のセミコロンだけを確認) |
+
+## 参考URL
+
+- [BBL成長型メモ(選択版)](https://docs.google.com/spreadsheets/d/1HXJGQ757maLYa6WEov7EiiYgF4N9-VS2k7nCYRiKnpg/edit?gid=607020028#gid=607020028)
 
 ## ライセンス
 
