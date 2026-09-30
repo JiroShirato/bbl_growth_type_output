@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
+.DS_Store
 
 # Virtual environments
 .venv
@@ -13,4 +14,7 @@ wheels/
 *.xlsx
 
 # Regression test reference output
-!tests/expected_output.xlsx
+!all_patterns_for_spreadsheet/tests/expected_output.xlsx
+
+# base spreadsheet file
+!all_patterns_for_spreadsheet/base_spreadsheet.xlsx
