@@ -8,16 +8,16 @@ OUTPUT_EXCEL_NAME_STR = "output.xlsx"
 REQUIRED_COLUMN_COUNT = 7
 
 # 小APの有無
-MINI_AP_ON_OFF_LIST = ["なし", "小AP"]
+MINI_AP_OPTION_LIST = ["なし", "小AP"]
 
 # YURの有無
-YUR_ON_OFF_LIST = ["なし", "YUR"]
+YUR_OPTION_LIST = ["なし", "YUR"]
 
 # 集中・イマイチの有無
-CONCENTRATE_ON_OFF_LIST = ["なし", "集中", "イマイチ"]
+CONCENTRATE_OPTION_LIST = ["なし", "集中", "イマイチ"]
 
 # ギプスの有無
-CAST_ON_OFF_LIST = ["なし", "ギプス"]
+GIPS_OPTION_LIST = ["なし", "ギプス"]
 
 # 出力対象の値
 OUTPUT_TYPE_LIST = ["出現値", "期待値"]
@@ -39,7 +39,7 @@ YUR_ADD_VALUE = 4
 MENTALIST_WIFE_MUL_FACTOR = 2.0
 
 # ギプスによる乗算時の係数
-CAST_MUL_FACTOR = 1.2
+GIPS_MUL_FACTOR = 1.2
 
 # 出力先の列名
 OUTPUT_COLUMN_NAME_LIST = [

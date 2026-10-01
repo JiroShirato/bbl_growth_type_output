@@ -272,7 +272,7 @@ pycodestyleは `pyproject.toml` の設定を読まないため、行の上限と
 | [base_spreadsheet.xlsx](./base_spreadsheet.xlsx) | 出力Excelの結果を条件を選んで表示する一覧表のテンプレート |
 | [tests/](./tests/) | 回帰テスト(`test_regression.py`)と基準の出力Excel(`expected_output.xlsx`) |
 
-`OnePattern` は一つの経験値パターンに対応したクラスです。`OnePattern` クラスのメソッド `get_values_list()` は内部リストをそのまま返し、`copy()` メソッドは別のリストを持つ経験値パターンの複製を返します。
+`OnePattern` は一つの経験値パターンに対応したクラスです。`OnePattern` クラスのメソッド `get_ex_values_list()` は内部リストをそのまま返し、`copy()` メソッドは別のリストを持つ経験値パターンの複製を返します。
 
 依存パッケージを追加する場合は、例えば `uv add openpyxl` を実行します。開発用のツールは `uv add --dev autopep8` のように `--dev` を付けて追加します。設定内のパターン識別子や条件の並び順は計算処理でも使用しているため、変更時は参照側との整合性も確認してください。
 
