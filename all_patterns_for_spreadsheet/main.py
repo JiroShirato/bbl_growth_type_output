@@ -3,14 +3,14 @@ import sys
 
 from openpyxl import Workbook
 
-import one_pattern_class as op_cls
-import init_values as ini_value
+import one_pattern_class as one_ptn
+import init_values as ini_val
 import ext_functions as ext_f
 import sub_functions as sub_f
 
 
-def main(input_file: str = ini_value.INPUT_CSV_FILE_NAME_STR,
-         output_file: str = ini_value.OUTPUT_EXCEL_NAME_STR) -> None:
+def main(input_file: str = ini_val.INPUT_CSV_FILE_NAME_STR,
+         output_file: str = ini_val.OUTPUT_EXCEL_NAME_STR) -> None:
     """各成長期で、練習時に出現する経験値(出現値)のパターンをExcelに出力
     Baseball Life(BBL)における成長型に割り当てられる成長期の経験値パターンから
     各補正が乗った時の出現する経験値を自動で計算するプログラム
@@ -33,38 +33,38 @@ def main(input_file: str = ini_value.INPUT_CSV_FILE_NAME_STR,
     """
 
     # シートの出力先の名前をkeyとして設定する属性を格納する辞書(小AP, YUR, 集中・イマイチ, ギプスの有無, 出力対象)
-    attribute_dict: dict[str, list[int]] = ext_f.make_attribute_dict()
+    attributes_by_condition: dict[str, list[int]] = ext_f.make_attributes_by_condition()
 
     # CSVから読み出した成長期の経験値パターン名と非AP小練習、非AP大練習、大練習マイナスの数をCSVファイルから取得
     try:
-        all_growth_ex_values_list: list[list[str]] = ext_f.read_csv_file(input_file)
+        all_growth_ex_values: list[list[str]] = ext_f.read_csv_file(input_file)
     except OSError as e:
         # ファイルなし、アクセス権限不足など
         raise OSError(f"入力ファイルを読み込めません: {input_file}") from e
 
-    if not all_growth_ex_values_list:
+    if not all_growth_ex_values:
         raise ValueError(f"入力CSVにデータがありません: {input_file}")
 
     # 新しいブックを作成(初期シートは削除)
     wb = Workbook()
     wb.remove(wb.active)
 
-    for condition_name, attribute_list in attribute_dict.items():
-        # 全ての経験値パターン(出現値と頻度)を格納する辞書(引数は成長期,出現経験値パターン)
-        all_ex_pattern_dict: dict[str, dict[str, op_cls.OnePattern]] = {}
+    for condition_name, attributes in attributes_by_condition.items():
+        # 全ての経験値パターン(出現値と頻度)を格納する辞書(キーは成長期,出現経験値パターン)
+        all_patterns: dict[str, dict[str, one_ptn.OnePattern]] = {}
 
-        # 経験値パターン毎に定められた出現値と頻度を計算
-        for a_growth_ex_values_list in all_growth_ex_values_list:
-            growth_name: str = a_growth_ex_values_list[0]
-            all_ex_pattern_dict[growth_name] = sub_f.calc_growth_patterns(a_growth_ex_values_list, attribute_list)
+        # 成長期毎に定められた出現値と頻度を計算
+        for a_growth_ex_values in all_growth_ex_values:
+            growth_name: str = a_growth_ex_values[0]
+            all_patterns[growth_name] = sub_f.calc_growth_patterns(a_growth_ex_values, attributes)
 
         # シートの本来の名前と出力対象の名前
-        condition_label, output_name = ext_f.separate_output_name_and_type(condition_name)
+        condition_label, output_type_name = ext_f.separate_condition_label_and_output_type(condition_name)
 
         # Excelへの出力
-        ws = wb.create_sheet(ext_f.make_sheet_name_from_attribute_list(attribute_list))
-        output_type = attribute_list[4]
-        sub_f.write_sheet(ws, all_ex_pattern_dict, output_type, condition_label, output_name)
+        ws = wb.create_sheet(ext_f.make_sheet_name_from_attributes(attributes))
+        output_type = attributes[4]
+        sub_f.write_sheet(ws, all_patterns, output_type, condition_label, output_type_name)
 
     wb.save(output_file)
     print(output_file + " を保存しました")

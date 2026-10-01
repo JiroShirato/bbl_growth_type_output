@@ -11,7 +11,8 @@
     "pull": "clasp pull",
     "open": "clasp open-script",
     "lint": "eslint main.js",
-    "lint:fix": "eslint --fix main.js"
+    "lint:fix": "eslint --fix main.js",
+    "typecheck": "tsc -p jsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@google/clasp": "^3.4.1",
     "@types/google-apps-script": "^2.0.13",
-    "eslint": "^10.11.0"
+    "eslint": "^10.11.0",
+    "typescript": "^7.0.2"
   }
 }
