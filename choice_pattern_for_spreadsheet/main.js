@@ -5,6 +5,20 @@ const input_sheet_name = "フォーム";
 const input_column = 3; // C列
 const input_row_ranges = [[7, 10], [13, 19]]; // C7:C10(基本情報)、C13:C19(補正情報)
 
+/**
+ * 経験値パターン
+ * @typedef {Object} ExPattern
+ * @property {string} name パターン名
+ * @property {number[]} value 出現値
+ * @property {number[]} frequency 頻度
+ * @property {number} [expected_value] 期待値
+ * @property {string[]} [probability] 確率(百分率の文字列)
+ */
+
+/**
+ * 入力欄を編集した時に、再計算する
+ * @param {GoogleAppsScript.Events.SheetsOnEdit} [e] 編集イベント(エディタから直接実行した場合はなし)
+ */
 function onEdit(e){
   // エディタから直接実行した場合(e がない場合)は、そのまま再計算する
   if(e && !is_input_cell_edited(e.range)){
@@ -13,7 +27,11 @@ function onEdit(e){
   add_all_corrections();
 }
 
-// 編集された範囲が、入力欄と重なっているかを判定する
+/**
+ * 編集された範囲が、入力欄と重なっているかを判定する
+ * @param {GoogleAppsScript.Spreadsheet.Range} edited_range 編集された範囲
+ * @returns {boolean}
+ */
 function is_input_cell_edited(edited_range){
   if(edited_range.getSheet().getName() !== input_sheet_name){
     return false;
@@ -70,36 +88,46 @@ function add_all_corrections(){
   
   // ex2. 関数の指定
 
-  // 配列名と値と出現数、属性を出力する関数
+  /**
+   * 配列名と値と出現数、属性を出力する関数
+   * @param {string} set_name パターン名
+   * @param {number[]} in_values 出現値
+   * @returns {ExPattern}
+   */
   function get_vals_dict_from_list(set_name, in_values){
-    let out_counts = []; // 出現頻度
-    let out_dict = { 
+    return {
       "name": set_name, // パターン名
       "value": in_values, // 出現結果
+      "frequency": in_values.map(() => 1), // 出現頻度(全て、1を入力)
     };
-
-    // 出現頻度の記録(全て、1を入力)
-    for(const a_value of in_values){ out_counts.push(1); }
-
-    out_dict["frequency"] = out_counts;
-
-    return out_dict;
   }
 
-  // パターン名にAPが含まれるか(先頭の "ap_" と、途中の "_ap_" の両方を判定。小APの "map_" は含めない)
+  /**
+   * パターン名にAPが含まれるか(先頭の "ap_" と、途中の "_ap_" の両方を判定。小APの "map_" は含めない)
+   * @param {string} pattern_name パターン名
+   * @returns {boolean}
+   */
   function has_ap(pattern_name){
     return pattern_name.startsWith("ap_") || pattern_name.includes("_ap_");
   }
 
-  // 経験値加算処理(加算から各配列に追加)
+  /**
+   * 経験値加算処理(加算から各配列に追加)
+   * @param {number[]} in_values 出現値
+   * @param {number[]} in_freqs 頻度
+   * @param {number[]} add_values 加算する値
+   * @returns {[number[], number[]]} 出現値と頻度
+   */
   function add_ex_value(in_values, in_freqs, add_values){
     // 計算結果の格納
+    /** @type {number[]} */
     let calculated_values = [];
+    /** @type {number[]} */
     let out_freqs = [];
 
     // 基本経験値＋加算値の結果の格納
     for(const a_add_value of add_values){
-      for(const a_ex_value_point in in_values){
+      for(const a_ex_value_point of in_values.keys()){
         const a_calculated_values = a_add_value + in_values[a_ex_value_point];
         const temp_point = calculated_values.indexOf(a_calculated_values);
         if(temp_point === -1){
@@ -114,7 +142,12 @@ function add_all_corrections(){
     return [calculated_values, out_freqs];
   }
 
-  // 経験値半減処理（切り捨てと切り上げが半々の確率で出現）  
+  /**
+   * 経験値半減処理（切り捨てと切り上げが半々の確率で出現）
+   * @param {number[]} in_values 出現値
+   * @param {number[]} in_freq 頻度
+   * @returns {[number[], number[]]} 出現値と頻度
+   */
   function div_half_ex_value(in_values, in_freq){
     // 半減（切り捨て）
     const floored_values = in_values.map(num => Math.floor(num / 2));
@@ -126,10 +159,12 @@ function add_all_corrections(){
     const concat_freqs = [...in_freq, ...in_freq];
 
     // 出現値と頻度を格納する
+    /** @type {number[]} */
     let out_values = [];
+    /** @type {number[]} */
     let out_freq = [];
 
-    for(const a_concat_point in concat_values){
+    for(const a_concat_point of concat_values.keys()){
       const a_concat_value = concat_values[a_concat_point];
       const temp_point = out_values.indexOf(a_concat_value);
       if(temp_point === -1){
@@ -142,13 +177,23 @@ function add_all_corrections(){
     return [out_values, out_freq];
   }
 
-  // 集中実行時による経験値の加算    
+  /**
+   * 集中実行時による経験値の加算
+   * @param {number[]} in_values 出現値
+   * @param {number[]} in_freqs 頻度
+   * @returns {[number[], number[]]} 出現値と頻度
+   */
   function add_concentrate_ex_value(in_values, in_freqs){
     return add_ex_value(in_values, in_freqs, concentrate_add_values);
   }
 
-  // 精密鍛錬（加算）
+  /**
+   * 精密鍛錬（加算）
+   * @param {number[]} in_values 出現値
+   * @returns {number[]} 加算後の出現値
+   */
   function add_precise_train_values(in_values){
+    /** @type {number[]} */
     let out_values = [];
 
     for(const a_ex_value of in_values){
@@ -167,7 +212,13 @@ function add_all_corrections(){
     return out_values;
   }
 
-  // 積極鍛錬（加算）
+  /**
+   * 積極鍛錬（加算）
+   * @param {number[]} in_values 出現値
+   * @param {number[]} in_freqs 頻度
+   * @param {boolean} is_large_train_minus 大練習でのマイナスがあるか
+   * @returns {[number[], number[]]} 出現値と頻度
+   */
   function add_proactive_train_values(in_values, in_freqs, is_large_train_minus){
     if(is_large_train_minus){
       // 大練習でのマイナスがある時（引数からフラグ取得）
@@ -178,7 +229,13 @@ function add_all_corrections(){
   }
 
 
-  // 積極鍛錬（減算）
+  /**
+   * 積極鍛錬（減算）
+   * @param {number[]} in_values 出現値
+   * @param {number[]} in_freqs 頻度
+   * @param {boolean} is_large_train_minus 大練習でのマイナスがあるか
+   * @returns {[number[], number[]]} 出現値と頻度
+   */
   function sub_proactive_train_values(in_values, in_freqs, is_large_train_minus){
     if(is_large_train_minus){
       // 大練習でのマイナスがある時
@@ -188,7 +245,13 @@ function add_all_corrections(){
     }
   }
 
-  // 慎重鍛錬（減算）
+  /**
+   * 慎重鍛錬（減算）
+   * @param {number[]} in_values 出現値
+   * @param {number[]} in_freqs 頻度
+   * @param {boolean} is_large_train_minus 大練習でのマイナスがあるか
+   * @returns {[number[], number[]]} 出現値と頻度
+   */
   function div_cautious_train_value(in_values, in_freqs, is_large_train_minus){
     if(is_large_train_minus){
       // 大練習でのマイナスがある時
@@ -199,16 +262,23 @@ function add_all_corrections(){
     }
   }
 
-  // 平衡鍛錬（加算）
+  /**
+   * 平衡鍛錬（加算）
+   * @param {number[]} in_values 出現値
+   * @param {number[]} in_freqs 頻度
+   * @returns {[number[], number[]]} 出現値と頻度
+   */
   function add_equilibrium_train_values(in_values, in_freqs){
     if(Math.max(...in_values) > 0){
       // 計算結果の格納
+      /** @type {number[]} */
       let calculated_values = [];
+      /** @type {number[]} */
       let out_freqs = [];
 
       // 基本経験値＋加算値の結果の格納
       for(const a_add_value of equilibrium_add_values){
-        for(const a_ex_value_point in in_values){
+        for(const a_ex_value_point of in_values.keys()){
           const a_in_value =  in_values[a_ex_value_point];
           // 出現値が1以上の時は平衡鍛錬の値を加算
           const a_calculated_values = (a_in_value > 0) ? a_add_value + a_in_value : a_in_value;
@@ -229,8 +299,12 @@ function add_all_corrections(){
 
   // 0. フォームの値の取得、及び各変数の設定
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(input_sheet_name);
+  if(!sheet){
+    throw new Error(`「${input_sheet_name}」シートが見つかりません`);
+  }
 
   // 出現値のパターンを格納する変数の作成
+  /** @type {ExPattern[]} */
   let all_pattern_ex = [];
 
   // 非AP小練習の値の取得
@@ -282,6 +356,7 @@ function add_all_corrections(){
   let is_created_new_ball = false;
 
   // 新しいパターンの一時格納用
+  /** @type {ExPattern[]} */
   let temp_dict_list = [];
 
   // APの初期の倍率（初期値は、ミートとパワー以外の1.5）
@@ -470,6 +545,7 @@ function add_all_corrections(){
 
     for(let a_ex of all_pattern_ex){
       let is_proactive_exec = false;
+      /** @type {number[][]} */
       let temp_result = [];
       if(a_ex["name"] !== "participate_independent_training_ex"){
         // 新球大練習（念のため、AP除外）の時の対応（小練習の値をもとに作成）
@@ -614,14 +690,14 @@ function add_all_corrections(){
     let count_freqs = 0; // 頻度をカウントする変数
 
     // 出現値と頻度を別配列に格納、そして出現値と頻度の積の総和と頻度の総和も記録
-    for(const a_point in a_ex["value"]){
+    for(const a_point of a_ex["value"].keys()){
       val_prob_list.push([a_ex["value"][a_point], a_ex["frequency"][a_point]]);
       count_vals_mul_freq = count_vals_mul_freq + a_ex["value"][a_point] * a_ex["frequency"][a_point];
       count_freqs = count_freqs + a_ex["frequency"][a_point];
     }
 
     // 出現頻度を確率に変換（頻度を頻度の総和で割る）
-    for(const a_point in val_prob_list){
+    for(const a_point of val_prob_list.keys()){
       val_prob_list[a_point][1] = val_prob_list[a_point][1] / count_freqs;
     }
     
@@ -704,7 +780,7 @@ function add_all_corrections(){
    ["participate_independent_training_ex", "自主トレ参加"]
   ];
 
-  for(const a_point in output_names){
+  for(const a_point of output_names.keys()){
     // 新球大練習を小練習から分けた時、種類の表示名の変更
     const now_name_list = output_names[a_point];
     if(is_created_new_ball){
@@ -740,7 +816,7 @@ function add_all_corrections(){
         }
         name_rows[row_index][0] = a_name_list[1];
         a_ex["value"].forEach((a_value, i) => { value_rows[row_index][i] = a_value; });
-        a_ex["probability"].forEach((a_prob, i) => { value_rows[row_index + 1][i] = a_prob; });
+        (a_ex["probability"] ?? []).forEach((a_prob, i) => { value_rows[row_index + 1][i] = a_prob; });
         value_rows[row_index][value_col_count] = a_ex["expected_value"]; // V列
         row_index = row_index + 2;
       }

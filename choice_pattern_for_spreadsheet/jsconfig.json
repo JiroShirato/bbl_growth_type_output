@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "target": "es2020",
+    "lib": ["es2020"],
+    "types": ["google-apps-script"]
+  },
+  "include": ["main.js"]
+}

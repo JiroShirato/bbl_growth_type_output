@@ -24,6 +24,7 @@
   "homepage": "https://github.com/JiroShirato/bbl_growth_type_output/tree/main/choice_pattern_for_spreadsheet#readme",
   "devDependencies": {
     "@google/clasp": "^3.4.1",
+    "@types/google-apps-script": "^2.0.13",
     "eslint": "^10.11.0"
   }
 }
