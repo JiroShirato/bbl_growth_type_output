@@ -150,9 +150,9 @@ function add_all_corrections(){
    */
   function div_half_ex_values(ex_values, frequencies){
     // 半減（切り捨て）
-    const floored_ex_values = ex_values.map(num => Math.floor(num / 2));
+    const floored_ex_values = ex_values.map(ex_value => Math.floor(ex_value / 2));
     // 半減（切り上げ）
-    const ceiled_ex_values = ex_values.map(num => Math.ceil(num / 2));
+    const ceiled_ex_values = ex_values.map(ex_value => Math.ceil(ex_value / 2));
     // 半減した値を結合（重複許す）
     const concat_ex_values = [...floored_ex_values, ...ceiled_ex_values];
     // 半減した頻度を結合（重複許す）
@@ -397,7 +397,7 @@ function add_all_corrections(){
           continue;
         } else {
           const add_one_pattern_name = "map_" + one_pattern["name"];
-          const added_ex_values = one_pattern["values"].map(num => num + mini_ap_add_ex_value);
+          const added_ex_values = one_pattern["values"].map(ex_value => ex_value + mini_ap_add_ex_value);
           add_patterns.push(create_ex_pattern(add_one_pattern_name, added_ex_values));
         }
       }
@@ -429,11 +429,11 @@ function add_all_corrections(){
       if(is_mini_ap_same_as_ap && one_pattern["name"].includes("map_")){
         // APと小APが同じになった時、小APのパターンをAP＋小APのパターンに変更する
         one_pattern["name"] ="ap_" + one_pattern["name"];
-        one_pattern["values"] = one_pattern["values"].map(num => Math.floor(num * Math.round(ap_mul_factor * 10) / 10));
+        one_pattern["values"] = one_pattern["values"].map(ex_value => Math.floor(ex_value * Math.round(ap_mul_factor * 10) / 10));
       } else if(!one_pattern["name"].includes("large_train") || which_main_ap !== "変化"){
         // それ以外は追加
         const add_one_pattern_name = "ap_" + one_pattern["name"];
-        const multiplied_ex_values = one_pattern["values"].map(num => Math.floor(num * Math.round(ap_mul_factor * 10) / 10));
+        const multiplied_ex_values = one_pattern["values"].map(ex_value => Math.floor(ex_value * Math.round(ap_mul_factor * 10) / 10));
         if(which_mini_ap ==="あり（APとは別）" && one_pattern["name"].includes("map_")){
           continue;
         } else if(which_mini_ap === "あり（APと同じ）" && !one_pattern["name"].includes("map_")){
@@ -452,7 +452,7 @@ function add_all_corrections(){
     for(let one_pattern of all_patterns){
       // 小練習か大練習が対象
       if(one_pattern["name"].includes("_train_ex")){
-        one_pattern["values"] = one_pattern["values"].map(num => num + yur_add_ex_value);
+        one_pattern["values"] = one_pattern["values"].map(ex_value => ex_value + yur_add_ex_value);
       }
     }
   }
@@ -477,12 +477,12 @@ function add_all_corrections(){
         if(is_added_new_pattern){
           // 更新対象の項目なら
           let add_one_pattern_name = "mental_" + one_pattern["name"];
-          const multiplied_ex_values = one_pattern["values"].map(num => num * mentalist_wife_mul_factor);
+          const multiplied_ex_values = one_pattern["values"].map(ex_value => ex_value * mentalist_wife_mul_factor);
           add_patterns.push(create_ex_pattern(add_one_pattern_name, multiplied_ex_values));
         } else if(is_overwriting_current_pattern){
           // 既存のAPの記録を上書きする形で、メンタ嫁APに置き換える
           one_pattern["name"] ="mental_" + one_pattern["name"];
-          one_pattern["values"] = one_pattern["values"].map(num => num * mentalist_wife_mul_factor);
+          one_pattern["values"] = one_pattern["values"].map(ex_value => ex_value * mentalist_wife_mul_factor);
         }
       }
     }
@@ -677,7 +677,7 @@ function add_all_corrections(){
     for(let one_pattern of all_patterns){
       // 小練習か大練習が対象
       if(one_pattern["name"].includes("_train_ex")){
-        one_pattern["values"] = one_pattern["values"].map(num => Math.ceil(num * Math.round(gips_mul_factor * 10) / 10));
+        one_pattern["values"] = one_pattern["values"].map(ex_value => Math.ceil(ex_value * Math.round(gips_mul_factor * 10) / 10));
       }
     }
   }
@@ -816,7 +816,7 @@ function add_all_corrections(){
         }
         name_rows[row_index][0] = a_name_pair[1];
         one_pattern["values"].forEach((a_ex_value, i) => { value_rows[row_index][i] = a_ex_value; });
-        (one_pattern["probabilities"] ?? []).forEach((a_prob, i) => { value_rows[row_index + 1][i] = a_prob; });
+        (one_pattern["probabilities"] ?? []).forEach((a_probability, i) => { value_rows[row_index + 1][i] = a_probability; });
         value_rows[row_index][value_col_count] = one_pattern["expected_ex_value"]; // V列
         row_index = row_index + 2;
       }

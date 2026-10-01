@@ -98,10 +98,10 @@ class OnePattern:
         Args:
             divisor (int): 除算する値
         """
-        pairs = list(zip(self.ex_values, self.frequencies))
+        ex_value_frequency_pairs = list(zip(self.ex_values, self.frequencies))
         self._set_merged_ex_values_and_frequencies(
-            [(math.floor(v / divisor), f) for v, f in pairs]
-            + [(math.ceil(v / divisor), f) for v, f in pairs]
+            [(math.floor(ex_value / divisor), frequency) for ex_value, frequency in ex_value_frequency_pairs]
+            + [(math.ceil(ex_value / divisor), frequency) for ex_value, frequency in ex_value_frequency_pairs]
         )
 
     def _add_ex_values_from_tuple(self, add_ex_values: tuple[int, ...]) -> None:
@@ -111,29 +111,29 @@ class OnePattern:
             add_ex_values (tuple[int, ...]): 加算する値の組
         """
         self._set_merged_ex_values_and_frequencies(
-            (v + add, f)
-            for add in add_ex_values
-            for v, f in zip(self.ex_values, self.frequencies)
+            (ex_value + ex_value_to_add, frequency)
+            for ex_value_to_add in add_ex_values
+            for ex_value, frequency in zip(self.ex_values, self.frequencies)
         )
 
     def add_equilibrium_ex_values(self) -> None:
         """平衡鍛錬向けの経験値加算処理
         """
         self._set_merged_ex_values_and_frequencies(
-            (v + add if v > 0 else v, f)
-            for add in self.EQUILIBRIUM_ADD_EX_VALUES
-            for v, f in zip(self.ex_values, self.frequencies)
+            (ex_value + ex_value_to_add if ex_value > 0 else ex_value, frequency)
+            for ex_value_to_add in self.EQUILIBRIUM_ADD_EX_VALUES
+            for ex_value, frequency in zip(self.ex_values, self.frequencies)
         )
 
-    def _set_merged_ex_values_and_frequencies(self, value_frequency_pairs: Iterable[tuple[int, int]]) -> None:
+    def _set_merged_ex_values_and_frequencies(self, ex_value_frequency_pairs: Iterable[tuple[int, int]]) -> None:
         """(出現値, 頻度) の組から、同じ出現値の頻度を合計して格納する
 
         Args:
-            value_frequency_pairs (Iterable[tuple[int, int]]): 出現値と頻度の組
+            ex_value_frequency_pairs (Iterable[tuple[int, int]]): 出現値と頻度の組
         """
         merged: dict[int, int] = {}
-        for value, frequency in value_frequency_pairs:
-            merged[value] = merged.get(value, 0) + frequency
+        for ex_value, frequency in ex_value_frequency_pairs:
+            merged[ex_value] = merged.get(ex_value, 0) + frequency
 
         self.ex_values = list(merged.keys())
         self.frequencies = list(merged.values())
