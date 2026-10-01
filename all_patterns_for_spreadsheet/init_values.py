@@ -23,7 +23,7 @@ GIPS_OPTION_LIST = ["なし", "ギプス"]
 OUTPUT_TYPE_LIST = ["出現値", "期待値"]
 
 # 小APによる加算値
-MINI_AP_ADD_VALUE = 2
+MINI_AP_ADD_EX_VALUE = 2
 
 # APによる乗算時の係数の辞書(ミート、パワー、その他)
 AP_MULTIPLICATION_FACTOR_DICT = {
@@ -33,7 +33,7 @@ AP_MULTIPLICATION_FACTOR_DICT = {
 }
 
 # YURによる加算値
-YUR_ADD_VALUE = 4
+YUR_ADD_EX_VALUE = 4
 
 # メンタリスト嫁による乗算時の係数
 MENTALIST_WIFE_MUL_FACTOR = 2.0

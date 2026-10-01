@@ -125,15 +125,15 @@ class OnePattern:
             for v, f in zip(self.ex_values, self.frequencies)
         )
 
-    def _set_merged_ex_values_and_frequencies(self, value_freq_pairs: Iterable[tuple[int, int]]) -> None:
+    def _set_merged_ex_values_and_frequencies(self, value_frequency_pairs: Iterable[tuple[int, int]]) -> None:
         """(出現値, 頻度) の組から、同じ出現値の頻度を合計して格納する
 
         Args:
-            value_freq_pairs (Iterable[tuple[int, int]]): 出現値と頻度の組
+            value_frequency_pairs (Iterable[tuple[int, int]]): 出現値と頻度の組
         """
         merged: dict[int, int] = {}
-        for value, freq in value_freq_pairs:
-            merged[value] = merged.get(value, 0) + freq
+        for value, frequency in value_frequency_pairs:
+            merged[value] = merged.get(value, 0) + frequency
 
         self.ex_values = list(merged.keys())
         self.frequencies = list(merged.values())
@@ -174,21 +174,21 @@ class OnePattern:
         """精密鍛錬向けの経験値加算処理
         """
         # 精密鍛錬の加算後の出現値をまとめるリスト
-        temp_ex_values: list[int] = []
+        added_ex_values: list[int] = []
 
         for a_ex_value in self.ex_values:
             if a_ex_value > 5:
                 # 6以上(経験値が5を超えている)なら+2
-                temp_ex_values.append(a_ex_value + 2)
+                added_ex_values.append(a_ex_value + 2)
             elif a_ex_value > 0:
                 # 1以上(経験値が0を超えている)なら+1
-                temp_ex_values.append(a_ex_value + 1)
+                added_ex_values.append(a_ex_value + 1)
             else:
                 # それ以外(経験値が0以下)ならそのまま
-                temp_ex_values.append(a_ex_value)
+                added_ex_values.append(a_ex_value)
 
         # 出現値のリストを更新
-        self.ex_values = temp_ex_values
+        self.ex_values = added_ex_values
 
     def calc_expected_ex_value(self) -> None:
         """期待値を算出
@@ -196,12 +196,12 @@ class OnePattern:
         """
         if len(self.frequencies) > 0:
             sum_frequencies: int = sum(self.frequencies)
-            sum_ex_values_mul_freq: int = 0
+            sum_ex_values_mul_frequencies: int = 0
 
             for i, a_ex_value in enumerate(self.ex_values):
-                sum_ex_values_mul_freq += a_ex_value * self.frequencies[i]
+                sum_ex_values_mul_frequencies += a_ex_value * self.frequencies[i]
 
-            self.expected_ex_value = round(sum_ex_values_mul_freq / sum_frequencies, 2)
+            self.expected_ex_value = round(sum_ex_values_mul_frequencies / sum_frequencies, 2)
         else:
             self.expected_ex_value = None
 

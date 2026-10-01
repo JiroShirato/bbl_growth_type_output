@@ -29,14 +29,14 @@ def calc_growth_patterns(a_growth_ex_values: list[str], attributes: list[int]) -
 
     # 1. 小APによる経験値加算処理
     if mini_ap == 1:
-        add_ex_value_to_train_patterns(patterns, ini_val.MINI_AP_ADD_VALUE)
+        add_ex_value_to_train_patterns(patterns, ini_val.MINI_AP_ADD_EX_VALUE)
 
     # 2. APによる経験値乗算処理
     add_ap_patterns(patterns)
 
     # 3. YURによる経験値加算処理
     if yur == 1:
-        add_ex_value_to_train_patterns(patterns, ini_val.YUR_ADD_VALUE)
+        add_ex_value_to_train_patterns(patterns, ini_val.YUR_ADD_EX_VALUE)
 
     # 4. メンタリスト能力持ちの嫁による経験値乗算処理
     add_mentalist_patterns(patterns)
@@ -73,27 +73,27 @@ def create_base_patterns(a_growth_ex_values: list[str]) -> dict[str, one_ptn.One
     patterns: dict[str, one_ptn.OnePattern] = {}
 
     # 非AP小練習の値の取得
-    small_pattern: one_ptn.OnePattern = one_ptn.OnePattern.from_strings(
+    small_train_pattern: one_ptn.OnePattern = one_ptn.OnePattern.from_strings(
         a_growth_ex_values[1], a_growth_ex_values[2])
-    patterns["small_train_ex"] = small_pattern
+    patterns["small_train_ex"] = small_train_pattern
 
     # 非AP大練習の値の取得
-    large_pattern: one_ptn.OnePattern = one_ptn.OnePattern.from_strings(
+    large_train_pattern: one_ptn.OnePattern = one_ptn.OnePattern.from_strings(
         a_growth_ex_values[3], a_growth_ex_values[4])
-    patterns["large_train_ex"] = large_pattern
+    patterns["large_train_ex"] = large_train_pattern
 
     # 大練習のマイナス値の取得
-    minus_pattern: one_ptn.OnePattern = one_ptn.OnePattern.from_strings(
+    large_minus_pattern: one_ptn.OnePattern = one_ptn.OnePattern.from_strings(
         a_growth_ex_values[6], a_growth_ex_values[5])
-    patterns["large_minus_ex"] = minus_pattern
+    patterns["large_minus_ex"] = large_minus_pattern
 
     # 自主トレ参加の値の取得(非AP小練習の値を使用、非AP小練習の値がない場合はインスタンスだけ作る)
-    small_ex_values: list[int] = small_pattern.get_ex_values()
-    if len(small_ex_values) == 0:
+    small_train_ex_values: list[int] = small_train_pattern.get_ex_values()
+    if len(small_train_ex_values) == 0:
         patterns["participate_independent_training_ex"] = one_ptn.OnePattern()
     else:
         independent_pattern: one_ptn.OnePattern = \
-            one_ptn.OnePattern(min(small_ex_values) * 3, max(small_ex_values) * 3)
+            one_ptn.OnePattern(min(small_train_ex_values) * 3, max(small_train_ex_values) * 3)
         patterns["participate_independent_training_ex"] = independent_pattern
 
     return patterns

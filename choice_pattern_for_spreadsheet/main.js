@@ -53,7 +53,7 @@ function add_all_corrections(){
   // ex1. 固定値の設定
   
   // 小APの追加の値
-  const mini_ap_add_value = 2;
+  const mini_ap_add_ex_value = 2;
 
   // APの各倍率
   const other_ap_mul_factor = 1.5;
@@ -61,10 +61,10 @@ function add_all_corrections(){
   const meet_ap_mul_factor = 1.3;
 
   // YURの追加の値
-  const yur_add_value = 4;
+  const yur_add_ex_value = 4;
 
   // メンタリスト嫁の能力の倍率
-  const mental_mul_factor = 2;
+  const mentalist_wife_mul_factor = 2;
 
   // 集中発生時の出現値
   const concentrate_add_ex_values = [3, 4, 5];
@@ -115,10 +115,10 @@ function add_all_corrections(){
    * 経験値加算処理(加算から各配列に追加)
    * @param {number[]} ex_values 出現値
    * @param {number[]} frequencies 頻度
-   * @param {number[]} add_values 加算する値
+   * @param {number[]} ex_values_to_add 加算する値
    * @returns {[number[], number[]]} 出現値と頻度
    */
-  function add_ex_values(ex_values, frequencies, add_values){
+  function add_ex_values(ex_values, frequencies, ex_values_to_add){
     // 計算結果の格納
     /** @type {number[]} */
     let calculated_ex_values = [];
@@ -126,7 +126,7 @@ function add_all_corrections(){
     let calculated_frequencies = [];
 
     // 基本経験値＋加算値の結果の格納
-    for(const a_add_ex_value of add_values){
+    for(const a_add_ex_value of ex_values_to_add){
       for(const a_ex_value_index of ex_values.keys()){
         const a_calculated_ex_value = a_add_ex_value + ex_values[a_ex_value_index];
         const found_index = calculated_ex_values.indexOf(a_calculated_ex_value);
@@ -344,9 +344,9 @@ function add_all_corrections(){
   const gips_option = sheet.getRange('C19').getValue();
 
   // 自主トレ参加時の経験値（pit は participate_independent_training の略）
-  const min_pit_ex = Math.min(...small_train_ex_values) * 3;
-  const max_pit_ex = Math.max(...small_train_ex_values) * 3;
-  const participate_independent_training_ex_values = Array.from({ length: (max_pit_ex - min_pit_ex + 1) }, (_, i) => i + min_pit_ex);
+  const min_pit_ex_value = Math.min(...small_train_ex_values) * 3;
+  const max_pit_ex_value = Math.max(...small_train_ex_values) * 3;
+  const participate_independent_training_ex_values = Array.from({ length: (max_pit_ex_value - min_pit_ex_value + 1) }, (_, i) => i + min_pit_ex_value);
   all_patterns.push(create_ex_pattern("participate_independent_training_ex", participate_independent_training_ex_values));
 
   // 大練習で下がるか、のフラグ
@@ -357,7 +357,7 @@ function add_all_corrections(){
 
   // 新しいパターンの一時格納用（必要に応じて、各処理の最後にall_patternsへ追加）
   /** @type {ExPattern[]} */
-  let new_patterns_for_add = [];
+  let add_patterns = [];
 
   // APの初期の倍率（初期値は、ミートとパワー以外の1.5）
   let ap_mul_factor = other_ap_mul_factor;
@@ -378,9 +378,9 @@ function add_all_corrections(){
     if(which_train_ability === "積極鍛錬" || which_train_ability === "精密鍛錬"){
       for(const one_pattern of all_patterns){
         if(one_pattern["name"].includes("small_train_ex")){
-          let temp_name = one_pattern["name"].replace('small', 'new_ball_large');
+          let add_one_pattern_name = one_pattern["name"].replace('small', 'new_ball_large');
           // 直接パターンを入れる（次の小AP追加の処理の対象にするため）
-          all_patterns.push(create_ex_pattern(temp_name, one_pattern["values"]));
+          all_patterns.push(create_ex_pattern(add_one_pattern_name, one_pattern["values"]));
           break; // 1回きり！
         }
       }
@@ -396,15 +396,15 @@ function add_all_corrections(){
           // 変化APで小APも変化の場合、変化の大練習は存在しないので除外
           continue;
         } else {
-          const temp_name = "map_" + one_pattern["name"];
-          const temp_ex_values = one_pattern["values"].map(num => num + mini_ap_add_value);
-          new_patterns_for_add.push(create_ex_pattern(temp_name, temp_ex_values));
+          const add_one_pattern_name = "map_" + one_pattern["name"];
+          const added_ex_values = one_pattern["values"].map(num => num + mini_ap_add_ex_value);
+          add_patterns.push(create_ex_pattern(add_one_pattern_name, added_ex_values));
         }
       }
     }
 
     // パターンの記録
-    for(const one_pattern of new_patterns_for_add){
+    for(const one_pattern of add_patterns){
       all_patterns.push(one_pattern);
     }
 
@@ -417,7 +417,7 @@ function add_all_corrections(){
     ap_mul_factor = power_ap_mul_factor;
   }
 
-  new_patterns_for_add = [];
+  add_patterns = [];
 
   for(let one_pattern of all_patterns){
     // 小練習か大練習が対象
@@ -432,18 +432,18 @@ function add_all_corrections(){
         one_pattern["values"] = one_pattern["values"].map(num => Math.floor(num * Math.round(ap_mul_factor * 10) / 10));
       } else if(!one_pattern["name"].includes("large_train") || which_main_ap !== "変化"){
         // それ以外は追加
-        const temp_name = "ap_" + one_pattern["name"];
-        const temp_ex_values = one_pattern["values"].map(num => Math.floor(num * Math.round(ap_mul_factor * 10) / 10));
+        const add_one_pattern_name = "ap_" + one_pattern["name"];
+        const multiplied_ex_values = one_pattern["values"].map(num => Math.floor(num * Math.round(ap_mul_factor * 10) / 10));
         if(which_mini_ap ==="あり（APとは別）" && one_pattern["name"].includes("map_")){
           continue;
         } else if(which_mini_ap === "あり（APと同じ）" && !one_pattern["name"].includes("map_")){
           continue;
         }
-        new_patterns_for_add.push(create_ex_pattern(temp_name, temp_ex_values));
+        add_patterns.push(create_ex_pattern(add_one_pattern_name, multiplied_ex_values));
       }
     }
   }
-  for(const one_pattern of new_patterns_for_add){
+  for(const one_pattern of add_patterns){
     all_patterns.push(one_pattern);
   }
 
@@ -452,14 +452,14 @@ function add_all_corrections(){
     for(let one_pattern of all_patterns){
       // 小練習か大練習が対象
       if(one_pattern["name"].includes("_train_ex")){
-        one_pattern["values"] = one_pattern["values"].map(num => num + yur_add_value);
+        one_pattern["values"] = one_pattern["values"].map(num => num + yur_add_ex_value);
       }
     }
   }
 
   // 4. メンタリスト能力持ちの嫁追加処理
   if(mental_wife_option === "あり"){
-    new_patterns_for_add = [];
+    add_patterns = [];
     for(let one_pattern of all_patterns){
       // 新たに追加するか
       let is_added_new_pattern = false;
@@ -476,17 +476,17 @@ function add_all_corrections(){
         }
         if(is_added_new_pattern){
           // 更新対象の項目なら
-          let temp_name = "mental_" + one_pattern["name"];
-          const temp_ex_values = one_pattern["values"].map(num => num * mental_mul_factor);
-          new_patterns_for_add.push(create_ex_pattern(temp_name, temp_ex_values));
+          let add_one_pattern_name = "mental_" + one_pattern["name"];
+          const multiplied_ex_values = one_pattern["values"].map(num => num * mentalist_wife_mul_factor);
+          add_patterns.push(create_ex_pattern(add_one_pattern_name, multiplied_ex_values));
         } else if(is_overwriting_current_pattern){
           // 既存のAPの記録を上書きする形で、メンタ嫁APに置き換える
           one_pattern["name"] ="mental_" + one_pattern["name"];
-          one_pattern["values"] = one_pattern["values"].map(num => num * mental_mul_factor);
+          one_pattern["values"] = one_pattern["values"].map(num => num * mentalist_wife_mul_factor);
         }
       }
     }
-    for(const one_pattern of new_patterns_for_add){
+    for(const one_pattern of add_patterns){
       all_patterns.push(one_pattern);
     }
 
@@ -498,9 +498,9 @@ function add_all_corrections(){
     for(let one_pattern of all_patterns){
       // 小練習か大練習が対象
       if(one_pattern["name"].includes("_train_ex")){
-        const temp_ex_values_and_frequencies = add_concentrate_ex_values(one_pattern["values"], one_pattern["frequencies"]);
-        one_pattern["values"] = temp_ex_values_and_frequencies[0];
-        one_pattern["frequencies"] = temp_ex_values_and_frequencies[1];
+        const added_ex_values_and_frequencies = add_concentrate_ex_values(one_pattern["values"], one_pattern["frequencies"]);
+        one_pattern["values"] = added_ex_values_and_frequencies[0];
+        one_pattern["frequencies"] = added_ex_values_and_frequencies[1];
       }
     }
     
@@ -509,9 +509,9 @@ function add_all_corrections(){
     for(let one_pattern of all_patterns){
       // 小練習か大練習が対象
       if(one_pattern["name"].includes("_train_ex")){
-        const temp_ex_values_and_frequencies = div_half_ex_values(one_pattern["values"], one_pattern["frequencies"]);
-        one_pattern["values"] = temp_ex_values_and_frequencies[0];
-        one_pattern["frequencies"] = temp_ex_values_and_frequencies[1];
+        const divided_ex_values_and_frequencies = div_half_ex_values(one_pattern["values"], one_pattern["frequencies"]);
+        one_pattern["values"] = divided_ex_values_and_frequencies[0];
+        one_pattern["frequencies"] = divided_ex_values_and_frequencies[1];
       }
     }
   
@@ -541,12 +541,12 @@ function add_all_corrections(){
         break;
     }
 
-    new_patterns_for_add = [];
+    add_patterns = [];
 
     for(let one_pattern of all_patterns){
       let is_proactive_exec = false;
       /** @type {number[][]} */
-      let temp_ex_values_and_frequencies = [];
+      let fixed_ex_values_and_frequencies = [];
       if(one_pattern["name"] !== "participate_independent_training_ex"){
         // 新球大練習（念のため、AP除外）の時の対応（小練習の値をもとに作成）
         if(one_pattern["name"].includes("small_train")){
@@ -555,7 +555,7 @@ function add_all_corrections(){
             // メンタ嫁除外
             if(!one_pattern["name"].includes("mental_")){
               // 加算値の計算
-              temp_ex_values_and_frequencies = add_proactive_train_ex_values(one_pattern["values"], one_pattern["frequencies"], is_large_train_minus);
+              fixed_ex_values_and_frequencies = add_proactive_train_ex_values(one_pattern["values"], one_pattern["frequencies"], is_large_train_minus);
               is_proactive_exec = true;
             }
           }
@@ -565,34 +565,34 @@ function add_all_corrections(){
             // メンタ嫁除外
             if(!one_pattern["name"].includes("mental_")){
               // 加算値の計算
-              temp_ex_values_and_frequencies = add_proactive_train_ex_values(one_pattern["values"], one_pattern["frequencies"], is_large_train_minus);
+              fixed_ex_values_and_frequencies = add_proactive_train_ex_values(one_pattern["values"], one_pattern["frequencies"], is_large_train_minus);
               is_proactive_exec = true;
             }
           }
         } else if(one_pattern["name"].includes("large_minus")){
           // 減少値の計算
-          temp_ex_values_and_frequencies = sub_proactive_train_ex_values(one_pattern["values"], one_pattern["frequencies"], is_large_train_minus);
+          fixed_ex_values_and_frequencies = sub_proactive_train_ex_values(one_pattern["values"], one_pattern["frequencies"], is_large_train_minus);
           is_proactive_exec = true;
         }
         if(is_proactive_exec){
-          let temp_name = "proactive_" + one_pattern["name"];
+          let add_one_pattern_name = "proactive_" + one_pattern["name"];
           if(one_pattern["name"].includes("small_train")){
             // 新球大練習なら名前を変更
-            temp_name = temp_name.replace('small', 'new_ball_large');
+            add_one_pattern_name = add_one_pattern_name.replace('small', 'new_ball_large');
           }
           if((is_proactive_ap && has_ap(one_pattern["name"])) || one_pattern["name"].includes("new_ball_large_train_ex")){
             // もしAPが積極鍛錬の対象、または新球大練習の場合は唯一なので、値を置き換える
-            one_pattern["name"] = temp_name;
-            one_pattern["values"] = temp_ex_values_and_frequencies[0];
-            one_pattern["frequencies"] = temp_ex_values_and_frequencies[1];
+            one_pattern["name"] = add_one_pattern_name;
+            one_pattern["values"] = fixed_ex_values_and_frequencies[0];
+            one_pattern["frequencies"] = fixed_ex_values_and_frequencies[1];
           } else {
             // それ以外は値を追加
             let new_pattern = { 
-              "name": temp_name, 
-              "values": temp_ex_values_and_frequencies[0], 
-              "frequencies": temp_ex_values_and_frequencies[1]
+              "name": add_one_pattern_name, 
+              "values": fixed_ex_values_and_frequencies[0], 
+              "frequencies": fixed_ex_values_and_frequencies[1]
             };
-            new_patterns_for_add.push(new_pattern);
+            add_patterns.push(new_pattern);
             if(one_pattern["name"].includes("small_train")){
               // 新球大練習の追加の場合、小練習の項目の名前を変えるフラグを建てる
               is_created_new_ball = true;
@@ -601,7 +601,7 @@ function add_all_corrections(){
         }
       }
     } 
-    for(const one_pattern of new_patterns_for_add){
+    for(const one_pattern of add_patterns){
       all_patterns.push(one_pattern);
     }
 
@@ -609,29 +609,29 @@ function add_all_corrections(){
     // 慎重大練習時のマイナス経験値
 
     for(let one_pattern of all_patterns){
-      let temp_ex_values_and_frequencies = [];
+      let divided_ex_values_and_frequencies = [];
       if(one_pattern["name"].includes("large_minus")){
         // 減少値の計算
-        temp_ex_values_and_frequencies = div_cautious_train_ex_values(one_pattern["values"], one_pattern["frequencies"], is_large_train_minus);
+        divided_ex_values_and_frequencies = div_cautious_train_ex_values(one_pattern["values"], one_pattern["frequencies"], is_large_train_minus);
         // 既存の減少の記録を上書きする形で、置き換え
         one_pattern["name"] ="cautious_" + one_pattern["name"];
-        one_pattern["values"] = temp_ex_values_and_frequencies[0];
-        one_pattern["frequencies"] = temp_ex_values_and_frequencies[1];
+        one_pattern["values"] = divided_ex_values_and_frequencies[0];
+        one_pattern["frequencies"] = divided_ex_values_and_frequencies[1];
       }   
     }
 
   } else if(which_train_ability === "精密鍛錬"){
 
-    new_patterns_for_add = [];
+    add_patterns = [];
 
     for(let one_pattern of all_patterns){
       if(one_pattern["name"].includes("small_train")){
         // 以下、新球大練習用の退避処理（退避処理がまだなら、ここで対応）、念のためAPは除外
         if(!is_created_new_ball && !has_ap(one_pattern["name"])){
           // 以下、新球大練習用の退避処理
-          const temp_name = one_pattern["name"].replace('small', 'new_ball_large');
-          new_patterns_for_add.push({
-            "name": temp_name, 
+          const add_one_pattern_name = one_pattern["name"].replace('small', 'new_ball_large');
+          add_patterns.push({
+            "name": add_one_pattern_name, 
             "values": [...one_pattern["values"]], 
             "frequencies": [...one_pattern["frequencies"]]
           });
@@ -645,29 +645,29 @@ function add_all_corrections(){
       }
     }
 
-    for(const one_pattern of new_patterns_for_add){
+    for(const one_pattern of add_patterns){
       all_patterns.push(one_pattern);
     }
 
   } else if(which_train_ability === "平衡鍛錬"){
 
-    new_patterns_for_add = [];
+    add_patterns = [];
 
     // 全パターンを平衡鍛錬に適用
     for(const one_pattern of all_patterns){
-      let temp_ex_values_and_frequencies = [];
+      let added_ex_values_and_frequencies = [];
       // 小練習か大練習が対象
       if(one_pattern["name"].includes("_train_ex")){
-        temp_ex_values_and_frequencies = add_equilibrium_train_ex_values(one_pattern["values"], one_pattern["frequencies"]);
-        const temp_name = "equilibrium_" + one_pattern["name"];
-        new_patterns_for_add.push({ 
-          "name": temp_name, 
-          "values": temp_ex_values_and_frequencies[0], 
-          "frequencies": temp_ex_values_and_frequencies[1]
+        added_ex_values_and_frequencies = add_equilibrium_train_ex_values(one_pattern["values"], one_pattern["frequencies"]);
+        const add_one_pattern_name = "equilibrium_" + one_pattern["name"];
+        add_patterns.push({ 
+          "name": add_one_pattern_name, 
+          "values": added_ex_values_and_frequencies[0], 
+          "frequencies": added_ex_values_and_frequencies[1]
         });
       }
     }
-    for(const one_pattern of new_patterns_for_add){
+    for(const one_pattern of add_patterns){
       all_patterns.push(one_pattern);
     }
   }
@@ -684,25 +684,25 @@ function add_all_corrections(){
 
   // 8. 確率、期待値算出、ソート
   for(let one_pattern of all_patterns){
-    let ex_value_prob_pairs = []; // 出現値と確率を格納する配列
+    let ex_value_probability_pairs = []; // 出現値と確率を格納する配列
     let probabilities = []; // 確率を格納するリスト
-    let sum_ex_values_mul_freq = 0; // 出現値と頻度をかけた数をまとめる変数
+    let sum_ex_values_mul_frequencies = 0; // 出現値と頻度をかけた数をまとめる変数
     let sum_frequencies = 0; // 頻度をカウントする変数
 
     // 出現値と頻度を別配列に格納、そして出現値と頻度の積の総和と頻度の総和も記録
     for(const a_index of one_pattern["values"].keys()){
-      ex_value_prob_pairs.push([one_pattern["values"][a_index], one_pattern["frequencies"][a_index]]);
-      sum_ex_values_mul_freq = sum_ex_values_mul_freq + one_pattern["values"][a_index] * one_pattern["frequencies"][a_index];
+      ex_value_probability_pairs.push([one_pattern["values"][a_index], one_pattern["frequencies"][a_index]]);
+      sum_ex_values_mul_frequencies = sum_ex_values_mul_frequencies + one_pattern["values"][a_index] * one_pattern["frequencies"][a_index];
       sum_frequencies = sum_frequencies + one_pattern["frequencies"][a_index];
     }
 
     // 出現頻度を確率に変換（頻度を頻度の総和で割る）
-    for(const a_index of ex_value_prob_pairs.keys()){
-      ex_value_prob_pairs[a_index][1] = ex_value_prob_pairs[a_index][1] / sum_frequencies;
+    for(const a_index of ex_value_probability_pairs.keys()){
+      ex_value_probability_pairs[a_index][1] = ex_value_probability_pairs[a_index][1] / sum_frequencies;
     }
     
     // 期待値の格納(出現値と頻度の積を総和と頻度の総和で割り、小数点2桁に丸める)
-    one_pattern["expected_ex_value"] = Math.round(sum_ex_values_mul_freq / sum_frequencies * 100) / 100;
+    one_pattern["expected_ex_value"] = Math.round(sum_ex_values_mul_frequencies / sum_frequencies * 100) / 100;
 
     // 出現値のソート（ここで頻度と並びがずれるので、出現値と総和を事前に退避する必要がある）
     if(one_pattern["name"].includes("large_minus")){
@@ -715,11 +715,11 @@ function add_all_corrections(){
 
     // 確率を出現値のソートに合わせて配列に格納
     for(const a_ex_value of one_pattern["values"]){
-      for(const a_pair of ex_value_prob_pairs){
+      for(const a_pair of ex_value_probability_pairs){
         if(a_ex_value === a_pair[0]){
-          const a_prob = Math.round(a_pair[1] * 10000) / 100; // 百分率表記に変更、小数点2桁に丸める
-          const str_prob = String(a_prob) + "%"; // 百分率の数値を文字列にして % を末尾に追加
-          probabilities.push(str_prob);
+          const a_probability = Math.round(a_pair[1] * 10000) / 100; // 百分率表記に変更、小数点2桁に丸める
+          const str_probability = String(a_probability) + "%"; // 百分率の数値を文字列にして % を末尾に追加
+          probabilities.push(str_probability);
           break;
         }
       }
@@ -782,21 +782,21 @@ function add_all_corrections(){
 
   for(const a_index of output_names.keys()){
     // 新球大練習を小練習から分けた時、種類の表示名の変更
-    const now_pair = output_names[a_index];
+    const a_name_pair = output_names[a_index];
     if(is_created_new_ball){
-      if(now_pair[0] === "small_train_ex"){
+      if(a_name_pair[0] === "small_train_ex"){
         output_names[a_index][1] = "小練習";
-      } else if(now_pair[0] === "map_small_train_ex"){
+      } else if(a_name_pair[0] === "map_small_train_ex"){
         output_names[a_index][1] = "小AP小練習";
       }
     }
     // 精密鍛錬が有効な時、小練習の表示名の変更
     if(which_train_ability === "精密鍛錬"){
-      if(now_pair[0].includes("small_train_ex")){
-        if(now_pair[0].includes("mental_")){
-          output_names[a_index][1] = now_pair[1].replace("精神小練習", "精密精神小練習");
+      if(a_name_pair[0].includes("small_train_ex")){
+        if(a_name_pair[0].includes("mental_")){
+          output_names[a_index][1] = a_name_pair[1].replace("精神小練習", "精密精神小練習");
         } else {
-          output_names[a_index][1] = now_pair[1].replace("小練習", "精密小練習");
+          output_names[a_index][1] = a_name_pair[1].replace("小練習", "精密小練習");
         }
       }
     }
