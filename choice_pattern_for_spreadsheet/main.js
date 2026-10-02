@@ -519,10 +519,12 @@ function add_all_corrections(){
 
   // 6. 各鍛錬による補正の結果
 
-  // 大練習で下がるか
-  const max_large_minus_ex_value = Math.max(...large_minus_ex_values);
-  if(max_large_minus_ex_value  < 0){
-    is_large_train_minus = true;
+  // 大練習で下がるか（大練習のマイナス値が存在する時のみ、処理）
+  if(large_minus_ex_values.length !== 0){
+    const max_large_minus_ex_value = Math.max(...large_minus_ex_values);
+    if(max_large_minus_ex_value < 0){
+      is_large_train_minus = true;
+    }
   }
 
   // 各鍛錬の補正の結果

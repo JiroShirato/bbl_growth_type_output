@@ -194,9 +194,9 @@ def has_large_minus(patterns: dict[str, one_ptn.OnePattern], growth_name: str) -
     large_minus_ex_values: list[int] = patterns["large_minus_ex"].get_ex_values()
     try:
         return max(large_minus_ex_values) < 0
-    except ValueError as e:
+    except ValueError:
         raise ValueError(
-            f"大練習マイナスの値が不正です: {e}、成長期:{growth_name}、値の配列:{large_minus_ex_values}") from e
+            f"大練習マイナスの値が空です。成長期:{growth_name}、値の配列:{large_minus_ex_values}") from None
 
 
 def make_proactive_patterns(patterns: dict[str, one_ptn.OnePattern],
